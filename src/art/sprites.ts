@@ -165,8 +165,8 @@ export const PONY_WINGED: Sprite = {
 /** Unicorn variant: horn added to the forelock. */
 export const PONY_HORNED: Sprite = {
   data: [
-    ".........f......",
-    "........MfM.....",
+    ".........N......",
+    "........MNM.....",
     "........MMMM....",
     "........MCCCC...",
     ".......MCCECC...",
@@ -180,7 +180,8 @@ export const PONY_HORNED: Sprite = {
     "...CC...CC......",
     "...HH...HH......",
   ],
-  remap: { C: C.WHITE, M: C.PINK, H: C.DARKGREY, E: C.BLACK },
+  // The horn keeps its own slot so it stays visible on a pale coat.
+  remap: { C: C.WHITE, M: C.PINK, H: C.DARKGREY, E: C.BLACK, N: C.YELLOW },
 };
 
 // ---------------------------------------------------------------------------

@@ -380,21 +380,21 @@ export class OriginScene implements Scene {
 
     const id = ORIGIN_ORDER[this.menu.index]!;
     const info = ORIGINS[id];
-    panel(16, 86, SCREEN_W - 32, 92, { fill: C.BLACK, border: C.GREY, double: true });
+    panel(16, 84, SCREEN_W - 32, 98, { fill: C.BLACK, border: C.GREY, double: true });
     const kind = id === "unicorn" ? "horned" : id === "pegasus" ? "winged" : "plain";
-    drawPony(24, 132, id === "earth" ? 5 : id === "pegasus" ? 1 : 3, kind, {
+    drawPony(22, 126, id === "earth" ? 5 : id === "pegasus" ? 1 : 3, kind, {
       bob: Math.floor(Math.sin(this.frame * 0.1) * 1.5),
+      scale: 2,
     });
-    screen.text(72, 92, `${info.name.toUpperCase()} OF ${info.home.toUpperCase()}`, C.YELLOW);
-    const blurb = wrapText(info.blurb, 38);
-    let by = 102;
-    for (const l of blurb) {
-      screen.text(72, by, l, C.WHITE);
+    screen.text(64, 90, `${info.name.toUpperCase()} OF ${info.home.toUpperCase()}`, C.YELLOW);
+    let by = 100;
+    for (const l of wrapText(info.blurb, 40).slice(0, 4)) {
+      screen.text(64, by, l, C.WHITE);
       by += CELL_H;
     }
-    by += 2;
-    for (const perk of info.perks) {
-      screen.text(24, by, `\u0004 ${perk}`, C.BRIGHTGREEN);
+    by = 134;
+    for (const perk of info.perks.slice(0, 5)) {
+      screen.text(22, by, `\u0004 ${perk}`, C.BRIGHTGREEN);
       by += CELL_H;
     }
     footer("choose a wagon master");

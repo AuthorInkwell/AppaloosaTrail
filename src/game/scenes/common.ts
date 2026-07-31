@@ -60,6 +60,13 @@ export class Pages implements Scene {
   }
 
   update(): void {
+    // ESC skips the rest of a long message sequence.
+    if (input.cancel()) {
+      audio.sfx("back");
+      scenes.pop();
+      this.onDone?.();
+      return;
+    }
     if (input.confirm() || input.pressed("Enter")) {
       audio.sfx("select");
       this.index++;

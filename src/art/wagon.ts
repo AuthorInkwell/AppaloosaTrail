@@ -60,11 +60,16 @@ export function drawPony(
   baseY: number,
   index: number,
   kind: PonyKind = "plain",
-  opts: { flipX?: boolean; bob?: number } = {},
+  opts: { flipX?: boolean; bob?: number; scale?: number } = {},
 ): void {
   const sprite = ponySprite(kind);
+  const scale = opts.scale ?? 1;
   const { h } = spriteSize(sprite);
-  screen.sprite(sprite, x, baseY - h + (opts.bob ?? 0), { remap: ponyRemap(index), flipX: opts.flipX });
+  screen.sprite(sprite, x, baseY - h * scale + (opts.bob ?? 0), {
+    remap: ponyRemap(index),
+    flipX: opts.flipX,
+    scale,
+  });
 }
 
 const TEAM_HAT_COLORS = [C.YELLOW, C.BRIGHTRED, C.BRIGHTGREEN, C.BRIGHTCYAN, C.WHITE, C.PINK];
