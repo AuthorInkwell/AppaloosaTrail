@@ -59,7 +59,7 @@ export class StoreScene implements Scene {
         {
           title: "Grandmotherly advice",
           text:
-            "An old mare outside the store is telling everypony the same thing: two hundred baskets of food, four in the team, a cloak each, and one spare of everything. Nopony has ever regretted listening to her.",
+            "An old mare outside the store is telling everypony the same thing: four hundred baskets of food, six in the team, a cloak each, and one spare of everything. Nopony has ever regretted listening to her.",
         },
       ]);
     }
@@ -217,9 +217,9 @@ export class StoreScene implements Scene {
     const top = gy + 3;
     screen.rect(8, top, SCREEN_W - 16, 9, C.BLUE);
     screen.text(12, top + 1, "ITEM", C.YELLOW);
-    screen.text(140, top + 1, "PRICE", C.YELLOW);
-    screen.text(196, top + 1, "HAVE", C.YELLOW);
-    screen.text(232, top + 1, "BUY", C.YELLOW);
+    screen.textRight(184, top + 1, "PRICE", C.YELLOW);
+    screen.textRight(224, top + 1, "HAVE", C.YELLOW);
+    screen.textRight(262, top + 1, "BUY", C.YELLOW);
     screen.textRight(SCREEN_W - 12, top + 1, "COST", C.YELLOW);
 
     STORE_ITEMS.forEach((item, i) => {
@@ -228,50 +228,49 @@ export class StoreScene implements Scene {
       if (selected) screen.rect(8, y - 2, SCREEN_W - 16, 12, C.BLUE);
       const ink = selected ? C.WHITE : C.GREY;
       const icon = ICONS[item.id];
-      if (icon) screen.sprite(icon, 12, y - 1);
-      else if (item.id === "team") screen.sprite(TEAM_MEMBER, 10, y - 4, { scale: 1, remap: { C: C.BROWN, A: C.YELLOW, K: C.RED, H: C.DARKGREY, "0": C.BLACK } });
-      screen.text(24, y, `${i + 1}. ${item.name}`, ink);
+      if (icon) screen.sprite(icon, 11, y - 1);
+      else if (item.id === "team") {
+        screen.sprite(TEAM_MEMBER, 6, y - 5, {
+          remap: { C: C.BROWN, A: C.YELLOW, K: C.RED, H: C.DARKGREY, "0": C.BLACK },
+        });
+      }
+      screen.text(28, y, `${i + 1}. ${item.name}`, ink);
       const price = unitPrice(item, this.priceMult);
-      const priceLabel = price < 1 ? `${Math.ceil(price * 10)}/10` : `${Math.ceil(price)}`;
-      screen.text(140, y, `${priceLabel} bits`, C.CYAN);
-      screen.text(200, y, String(stateQty(g, item.id)), C.WHITE);
+      const priceLabel = price < 1 ? `${Math.ceil(price * 10)} / 10` : `${Math.ceil(price)}`;
+      screen.textRight(184, y, `${priceLabel} bits`, C.CYAN);
+      screen.textRight(224, y, String(stateQty(g, item.id)), C.WHITE);
       const q = this.qty[i]!;
       const qtyLabel = q === 0 ? "-" : q > 0 ? `+${q}` : `${q}`;
-      screen.text(232, y, qtyLabel, q === 0 ? C.DARKGREY : q > 0 ? C.BRIGHTGREEN : C.BRIGHTRED);
+      screen.textRight(262, y, qtyLabel, q === 0 ? C.DARKGREY : q > 0 ? C.BRIGHTGREEN : C.BRIGHTRED);
       if (q !== 0) {
         const cost = q > 0 ? lineCost(item, q, this.priceMult) : -(-q * TEAM_DISMISS_REFUND);
         screen.textRight(SCREEN_W - 12, y, cost >= 0 ? String(cost) : `+${-cost}`, cost >= 0 ? C.WHITE : C.BRIGHTGREEN);
-      }
-      if (selected) {
-        screen.text(24, y + 0, `${i + 1}. ${item.name}`, C.WHITE);
       }
     });
 
     // Selected item description
     const item = STORE_ITEMS[this.index]!;
     const descY = top + 12 + STORE_ITEMS.length * 13 + 2;
-    panel(8, descY, SCREEN_W - 16, 24, { fill: C.BLACK, border: C.DARKGREY });
+    panel(8, descY, SCREEN_W - 16, 26, { fill: C.BLACK, border: C.DARKGREY });
     let dy = descY + 4;
-    for (const line of wrapText(item.desc, 50)) {
+    for (const line of wrapText(item.desc, 50).slice(0, 2)) {
       screen.text(12, dy, line, C.BRIGHTGREEN);
       dy += CELL_H;
     }
-    if (item.id === "team" && g.team > 0) {
-      screen.textRight(SCREEN_W - 12, descY + 14, `dismiss for ${TEAM_DISMISS_REFUND} bits each`, C.BROWN);
-    }
     if (item.id === "team") {
-      screen.textRight(SCREEN_W - 12, descY + 4, `team may be at most ${MAX_TEAM}`, C.DARKGREY);
+      const hint = g.team > 0 ? `at most ${MAX_TEAM}; dismiss for ${TEAM_DISMISS_REFUND} bits each` : `at most ${MAX_TEAM} in the team`;
+      screen.text(12, descY + 17, hint, C.BROWN);
     }
 
     // Totals
-    const totY = descY + 27;
+    const totY = descY + 29;
     const total = this.total();
     screen.rect(8, totY, SCREEN_W - 16, 11, total > g.bits ? C.RED : C.GREEN);
     screen.frame(8, totY, SCREEN_W - 16, 11, C.GREY);
-    screen.text(12, totY + 2, `TOTAL: ${total} bits`, C.WHITE);
-    screen.sprite(COIN, 150, totY + 1);
-    screen.text(162, totY + 2, `bits on hoof: ${Math.round(g.bits)}`, C.WHITE);
-    screen.textRight(SCREEN_W - 12, totY + 2, `after: ${Math.round(g.bits - total)}`, C.WHITE);
+    screen.text(12, totY + 2, `TOTAL ${total}`, C.WHITE);
+    screen.sprite(COIN, 118, totY + 1);
+    screen.text(130, totY + 2, `purse ${Math.round(g.bits)}`, C.WHITE);
+    screen.textRight(SCREEN_W - 12, totY + 2, `left over ${Math.round(g.bits - total)}`, C.WHITE);
 
     drawSupplyStrip(g, 8, totY + 13, SCREEN_W - 16);
 

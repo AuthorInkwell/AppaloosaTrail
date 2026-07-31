@@ -198,27 +198,27 @@ export function drawStatusPanel(g: GameState, y: number): void {
   screen.rect(0, y, SCREEN_W, h, C.BLACK);
   screen.hline(0, y, SCREEN_W, C.GREY);
   const next = nextLandmarkInfo(g);
-  const col1 = 6;
-  const col2 = 168;
-  let row = y + 5;
+  const col1 = 5;
+  const col2 = 166;
+  let row = y + 4;
   const line = (x: number, label: string, value: string, valueColor: Color = C.WHITE) => {
     screen.text(x, row, label, C.CYAN);
-    screen.text(x + label.length * CELL_W + CELL_W, row, value, valueColor);
+    screen.text(x + (label.length + 1) * CELL_W, row, value, valueColor);
   };
   line(col1, "Date:", formatDate(g.date));
   line(col2, "Weather:", weatherLabel(g.weather), C.BRIGHTCYAN);
-  row += CELL_H;
+  row += CELL_H + 1;
   line(col1, "Health:", healthLabel(partyHealth(g)), healthColor(partyHealth(g)));
   line(col2, "Food:", `${Math.round(g.food)} baskets`, g.food < 20 ? C.BRIGHTRED : C.WHITE);
-  row += CELL_H;
+  row += CELL_H + 1;
   line(col1, "Team:", `${g.team} in harness`, g.team === 0 ? C.BRIGHTRED : C.WHITE);
   line(col2, "Bits:", `${Math.round(g.bits)}`);
-  row += CELL_H;
-  line(col1, "Travelled:", `${Math.round(g.miles)} miles`);
-  line(col2, "Next stop:", `${next.milesAway} mi`, C.YELLOW);
-  row += CELL_H;
-  screen.text(col1, row, `${next.name}`, C.YELLOW);
-  screen.textRight(SCREEN_W - 6, row, `${PACE_INFO[g.pace].name}, ${RATION_INFO[g.rations].name} rations`, C.GREY);
+  row += CELL_H + 1;
+  line(col1, "Gone:", `${Math.round(g.miles)} mi`);
+  screen.text(96, row, "Next:", C.CYAN);
+  screen.text(132, row, `${next.name.slice(0, 20)}, ${next.milesAway} mi`, C.YELLOW);
+  row += CELL_H + 3;
+  screen.text(col1, row, `${PACE_INFO[g.pace].name}, ${RATION_INFO[g.rations].name} rations`, C.DARKGREY);
 }
 
 export function healthColor(h: number): Color {
@@ -233,15 +233,18 @@ export function healthColor(h: number): Color {
 export function drawSupplyStrip(g: GameState, x: number, y: number, w: number): void {
   screen.rect(x, y, w, 11, C.BLUE);
   screen.frame(x, y, w, 11, C.GREY);
+  const right = `health: ${healthLabel(partyHealth(g))}`;
   const parts = [
     `${Math.round(g.bits)} bits`,
     `${Math.round(g.food)} baskets`,
     `team ${g.team}`,
     `${g.potions} potions`,
   ];
+  // Drop trailing entries until the line clears the right-hand readout.
+  const budget = Math.floor((w - 12) / CELL_W) - right.length;
+  while (parts.length > 1 && parts.join("  \u0006  ").length > budget) parts.pop();
   screen.text(x + 4, y + 2, parts.join("  \u0006  "), C.WHITE);
-  const hl = healthLabel(partyHealth(g));
-  screen.textRight(x + w - 4, y + 2, `health: ${hl}`, healthColor(partyHealth(g)));
+  screen.textRight(x + w - 4, y + 2, right, healthColor(partyHealth(g)));
 }
 
 export function ponyList(g: GameState): string[] {

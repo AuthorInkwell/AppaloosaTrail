@@ -11,7 +11,7 @@ import { Scene, scenes } from "../../engine/scene";
 import { C, SCREEN_H, SCREEN_W, Sprite, screen, spriteSize } from "../../engine/screen";
 import { Menu, blink, footer, gauge, panel, screenFrame, wrapText } from "../../engine/ui";
 import { APPLE, BERRIES, BIRD_A, BIRD_B, DEER, GRASSES, NUTS } from "../../art/sprites";
-import { drawBush, drawGroundDetail, drawSky, drawTree, hash01, skyPalette } from "../../art/scenery";
+import { drawBush, drawGroundDetail, drawPine, drawTree, hash01, skyPalette } from "../../art/scenery";
 import { drawPony, drawWagon } from "../../art/wagon";
 import { FORAGE_THEME } from "../data/music";
 import { terrainAt } from "../data/trail";
@@ -35,7 +35,7 @@ const OPTIONS: ForageOption[] = [
 ];
 
 const FIELD_TOP = 44;
-const FIELD_BOTTOM = 158;
+const FIELD_BOTTOM = 152;
 const PLAYER_SPEED = 64;
 
 type ItemKind = "berries" | "nuts" | "grasses" | "apple";
@@ -376,9 +376,19 @@ export class ForageScene implements Scene {
       y += 8;
     }
     screen.text(20, y + 4, "Food is measured in basketfuls.", C.BRIGHTCYAN);
-    this.menu.draw({ x: 40, y: 72, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 12, width: 230, detailColor: C.BROWN });
+    this.menu.draw({
+      x: 40,
+      y: 72,
+      color: C.GREY,
+      cursorColor: C.YELLOW,
+      lineHeight: 12,
+      width: 230,
+      detailColor: C.BROWN,
+      noteY: 138,
+      noteWidth: 290,
+    });
     if (this.g.origin === "earth") {
-      screen.textCentered(SCREEN_W / 2, 132, "as an earth pony you can carry a third again as much", C.BRIGHTGREEN);
+      screen.textCentered(SCREEN_W / 2, 170, "an earth pony can carry a third again as much", C.BRIGHTGREEN);
     }
     footer("how long will you forage?");
   }
@@ -386,24 +396,29 @@ export class ForageScene implements Scene {
   private drawField(): void {
     const terrain = terrainAt(this.g.miles);
     const pal = skyPalette(terrain === "town" ? "plains" : terrain);
-    drawSky(0, FIELD_TOP + 8, pal);
-    screen.rect(0, FIELD_TOP + 8, SCREEN_W, FIELD_BOTTOM - FIELD_TOP + 6, pal.ground);
-    drawGroundDetail(FIELD_TOP + 10, FIELD_BOTTOM - FIELD_TOP, this.frame * 0, pal, 44);
-    for (let i = 0; i < 5; i++) {
-      drawBush(20 + i * 62, FIELD_BOTTOM + 4 + ((i % 2) * 3), 0.8 + hash01(i, 91) * 0.4, C.GREEN);
+    screen.clear(C.BLACK);
+    screen.rect(0, FIELD_TOP - 20, SCREEN_W, 22, pal.sky);
+    for (let i = 0; i < 16; i++) {
+      drawPine(6 + i * 21, FIELD_TOP + 2, 0.55 + hash01(i, 93) * 0.25, C.GREEN);
     }
-    drawTree(this.treeX, FIELD_TOP + 26, 1.15);
-    drawWagon(SCREEN_W - 44, FIELD_BOTTOM + 8, 0);
+    screen.rect(0, FIELD_TOP + 2, SCREEN_W, FIELD_BOTTOM - FIELD_TOP + 16, pal.ground);
+    screen.hline(0, FIELD_TOP + 2, SCREEN_W, pal.groundAlt);
+    drawGroundDetail(FIELD_TOP + 6, FIELD_BOTTOM - FIELD_TOP + 8, 0, pal, 44);
+    for (let i = 0; i < 5; i++) {
+      drawBush(20 + i * 62, FIELD_BOTTOM + 8 + ((i % 2) * 3), 0.8 + hash01(i, 91) * 0.4, C.GREEN);
+    }
+    drawTree(this.treeX, FIELD_TOP + 30, 1.15);
+    drawWagon(SCREEN_W - 44, FIELD_BOTTOM + 14, 0);
 
-    // Items
+    // Items, drawn double-size so they read at a glance.
     for (const it of this.items) {
       const spr = ITEM_SPRITE[it.kind];
       const size = spriteSize(spr);
       const wob = it.state === "flying" ? Math.floor(Math.sin(this.frame * 0.4 + it.x * 0.1) * 2) : 0;
-      const scale = it.pop > 0 ? 2 : 1;
-      screen.sprite(spr, it.x - size.w / 2, it.y - size.h / 2 + wob, { scale });
+      const scale = it.pop > 0 ? 3 : 2;
+      screen.sprite(spr, it.x - (size.w * scale) / 2, it.y - (size.h * scale) / 2 + wob, { scale });
       if (it.state === "ground" && it.life < 2.5 && blink(280, 0.5)) {
-        screen.px(it.x, it.y - 6, C.WHITE);
+        screen.rect(it.x - 1, it.y - 10, 2, 2, C.WHITE);
       }
     }
 
@@ -411,7 +426,7 @@ export class ForageScene implements Scene {
     for (const c of this.critters) {
       if (c.kind === "bird") {
         const spr = Math.floor(c.frame / 6) % 2 === 0 ? BIRD_A : BIRD_B;
-        screen.sprite(spr, c.x - 5, c.y - 2, { flipX: c.x > this.px });
+        screen.sprite(spr, c.x - 10, c.y - 4, { flipX: c.x > this.px, scale: 2 });
       } else {
         screen.sprite(DEER, c.x - 8, c.y - 14, { flipX: c.x > this.px });
       }
@@ -432,9 +447,9 @@ export class ForageScene implements Scene {
     gauge(196, 6, 116, Math.max(0, this.timeLeft / this.option.seconds), C.YELLOW);
     screen.textRight(SCREEN_W - 8, 16, `${Math.ceil(this.timeLeft)}s of daylight`, C.CYAN);
 
-    const panelY = FIELD_BOTTOM + 20;
+    const panelY = FIELD_BOTTOM + 24;
     panel(0, panelY, SCREEN_W, SCREEN_H - panelY, { fill: C.BLACK, border: C.DARKGREY });
-    screen.text(8, panelY + 5, "arrow keys to move  \u0006  walk over food to gather it", C.GREY);
-    screen.text(8, panelY + 14, "get close to scare off birds and deer  \u0006  ESC to head back", C.GREY);
+    screen.text(6, panelY + 4, "arrows move  \u0006  walk over food to gather", C.GREY);
+    screen.text(6, panelY + 12, "get close to scare off critters  \u0006  ESC ends", C.GREY);
   }
 }

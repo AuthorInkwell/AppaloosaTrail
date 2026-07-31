@@ -110,7 +110,12 @@ export class SizeUpScene implements Scene {
     screen.textCentered(SCREEN_W / 2, 22, "SIZING UP THE SITUATION", C.YELLOW);
     screen.hline(30, 31, SCREEN_W - 60, C.DARKGREY);
     const next = nextLandmarkInfo(g);
-    screen.textCentered(SCREEN_W / 2, 35, `${formatDate(g.date)}  \u0006  ${next.milesAway} miles to ${next.name}`, C.BRIGHTCYAN);
+    screen.textCentered(
+      SCREEN_W / 2,
+      35,
+      `${formatDate(g.date)}  \u0006  ${next.milesAway} mi to ${next.name}`.slice(0, 44),
+      C.BRIGHTCYAN,
+    );
     screen.textCentered(SCREEN_W / 2, 44, "You may:", C.CYAN);
     this.menu.draw({
       x: 46,
@@ -207,55 +212,52 @@ export class MapScene implements Scene {
     }
   }
 
+  /**
+   * A vertical strip map: the trail runs top to bottom with names on the left
+   * and mile markers on the right, which is the only way sixteen landmarks fit
+   * legibly in fifty-three columns.
+   */
   draw(): void {
     const g = session.current;
     screenFrame("THE TRAIL WEST");
-    const left = 22;
-    const right = SCREEN_W - 22;
-    const span = right - left;
-    const xFor = (mile: number) => left + (mile / TOTAL_MILES) * span;
-    const yFor = (mile: number) => 104 + Math.sin((mile / TOTAL_MILES) * Math.PI * 3.2) * 22;
+    const next = nextLandmarkInfo(g);
+    screen.textCentered(SCREEN_W / 2, 15, `${Math.round(g.miles)} of ${TOTAL_MILES} miles travelled`, C.WHITE);
+    gauge(70, 24, 180, g.miles / TOTAL_MILES, C.BRIGHTGREEN);
 
-    // Trail line
-    for (let mile = 0; mile <= TOTAL_MILES; mile += 4) {
-      screen.px(Math.round(xFor(mile)), Math.round(yFor(mile)), C.BROWN);
-      screen.px(Math.round(xFor(mile)), Math.round(yFor(mile)) + 1, C.DARKGREY);
-    }
+    const railX = 196;
+    const top = 34;
+    const rowH = 9;
+    screen.vline(railX, top - 3, TRAIL.length * rowH + 4, C.BROWN);
+    screen.vline(railX + 1, top - 3, TRAIL.length * rowH + 4, C.DARKGREY);
 
     TRAIL.forEach((l, i) => {
-      const x = Math.round(xFor(l.mile));
-      const y = Math.round(yFor(l.mile));
+      const y = top + i * rowH;
       const passed = g.miles >= l.mile;
-      const color = l.kind === "river" ? C.BRIGHTCYAN : l.kind === "town" ? C.YELLOW : l.kind === "end" ? C.BRIGHTGREEN : C.WHITE;
-      screen.rect(x - 1, y - 1, 3, 3, passed ? color : C.DARKGREY);
-      const above = i % 2 === 0;
-      const label = l.name.length > 17 ? `${l.name.slice(0, 16)}.` : l.name;
-      const lx = Math.max(4, Math.min(SCREEN_W - label.length * 6 - 4, x - label.length * 3));
-      screen.text(lx, above ? y - 14 : y + 8, label, passed ? color : C.DARKGREY);
-      if (!above) screen.text(lx, y + 16, `${l.mile}`, C.DARKGREY);
-      else screen.text(lx, y - 22, `${l.mile}`, C.DARKGREY);
+      const isNext = TRAIL[g.landmarkIndex]?.id === l.id;
+      const color =
+        l.kind === "river" ? C.BRIGHTCYAN : l.kind === "town" ? C.YELLOW : l.kind === "end" ? C.BRIGHTGREEN : C.WHITE;
+      const ink = passed ? color : isNext ? C.WHITE : C.DARKGREY;
+      screen.textRight(railX - 6, y, l.name.slice(0, 22), ink);
+      screen.rect(railX - 2, y + 2, 6, 3, passed ? color : C.DARKGREY);
+      screen.text(railX + 10, y, `${l.mile} mi`, passed ? C.GREY : C.DARKGREY);
+      const tag =
+        l.kind === "river" ? "crossing" : l.kind === "town" ? "supplies" : l.kind === "fork" ? "a choice" : "";
+      if (tag) screen.text(railX + 56, y, tag, passed ? C.DARKGREY : C.BROWN);
+      if (isNext && blink(600, 0.6)) screen.text(railX - 2 - 14, y, "\u0004", C.BRIGHTRED);
     });
 
-    // Wagon marker
-    const mx = Math.round(xFor(g.miles));
-    const my = Math.round(yFor(g.miles));
-    screen.rect(mx - 4, my - 10, 9, 7, C.WHITE);
-    screen.rect(mx - 4, my - 4, 9, 2, C.BROWN);
-    screen.px(mx - 3, my - 2, C.BLACK);
-    screen.px(mx + 3, my - 2, C.BLACK);
-    if (blink(600, 0.6)) screen.text(mx - 8, my - 20, "\u0002", C.BRIGHTRED);
+    // The wagon sits between the ticks according to how far along it is.
+    const prev = TRAIL.filter((l) => l.mile <= g.miles).length - 1;
+    const from = TRAIL[Math.max(0, prev)]!;
+    const to = TRAIL[Math.min(TRAIL.length - 1, prev + 1)]!;
+    const t = to.mile > from.mile ? (g.miles - from.mile) / (to.mile - from.mile) : 0;
+    const wy = Math.round(top + (Math.max(0, prev) + t) * rowH);
+    screen.rect(railX - 5, wy - 3, 11, 6, C.BLACK);
+    screen.rect(railX - 4, wy - 3, 9, 4, C.WHITE);
+    screen.rect(railX - 4, wy + 1, 9, 2, C.BROWN);
 
-    const next = nextLandmarkInfo(g);
-    screen.textCentered(SCREEN_W / 2, 20, `${Math.round(g.miles)} miles travelled of ${TOTAL_MILES}`, C.WHITE);
-    gauge(60, 32, 200, g.miles / TOTAL_MILES, C.BRIGHTGREEN);
-    screen.textCentered(SCREEN_W / 2, 44, `${next.milesAway} miles to ${next.name}`, C.YELLOW);
-    screen.textCentered(
-      SCREEN_W / 2,
-      SCREEN_H - 30,
-      `${Math.round(TOTAL_MILES - g.miles)} miles still to go to Appaloosa`,
-      C.BRIGHTCYAN,
-    );
-    footer("press SPACE BAR to go back");
+    screen.textCentered(SCREEN_W / 2, SCREEN_H - 20, `${next.milesAway} miles to ${next.name}`.slice(0, 50), C.YELLOW);
+    footer("press SPACE BAR to go back", C.YELLOW, SCREEN_H - 9);
     void this.frame;
   }
 }
@@ -298,8 +300,8 @@ export class PaceScene implements Scene {
       y += CELL_H;
     }
     screen.text(20, 54, `You are currently travelling at ${PACE_INFO[g.pace].name}.`, C.BRIGHTCYAN);
-    this.menu.draw({ x: 40, y: 76, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 14 });
-    screen.textCentered(SCREEN_W / 2, 132, `about ${Math.round(milesPerDay(g))} miles a day at present`, C.BROWN);
+    this.menu.draw({ x: 40, y: 76, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 14, noteY: 122, noteWidth: 280 });
+    screen.textCentered(SCREEN_W / 2, 156, `about ${Math.round(milesPerDay(g))} miles a day at present`, C.BROWN);
     footer("choose a pace");
   }
 }
@@ -339,12 +341,12 @@ export class RationsScene implements Scene {
       screen.text(20, y, line, C.WHITE);
       y += CELL_H;
     }
-    this.menu.draw({ x: 40, y: 62, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 14 });
+    this.menu.draw({ x: 40, y: 62, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 14, noteY: 108, noteWidth: 280 });
     const need = dailyFoodNeed(g);
-    screen.textCentered(SCREEN_W / 2, 120, `at present the party eats ${need.toFixed(1)} baskets a day`, C.BROWN);
+    screen.textCentered(SCREEN_W / 2, 142, `at present the party eats ${need.toFixed(1)} baskets a day`, C.BROWN);
     screen.textCentered(
       SCREEN_W / 2,
-      130,
+      152,
       `${g.team} in the team eat ${(g.team * 0.5).toFixed(1)} of that`,
       C.DARKGREY,
     );
@@ -422,7 +424,7 @@ export class PartyScene implements Scene {
         else screen.textRight(SCREEN_W - 20, y + 15, "well", C.BRIGHTGREEN);
       }
     });
-    footer(g.potions > 0 ? "P uses a potion on the chosen pony  \u0006  SPACE BAR to go back" : "press SPACE BAR to go back");
+    footer(g.potions > 0 ? "P for a potion  \u0006  SPACE BAR to go back" : "press SPACE BAR to go back");
   }
 }
 

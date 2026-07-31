@@ -33,9 +33,9 @@ import { drawStatusPanel } from "./common";
 import { runDayResult } from "./eventrunner";
 import { SizeUpScene } from "./menus";
 
-const HORIZON = 96;
-const GROUND_Y = 138;
-const PANEL_Y = 146;
+const HORIZON = 92;
+const GROUND_Y = 136;
+const PANEL_Y = 144;
 const DAY_SECONDS = 1.15;
 
 export function drawWeatherOverlay(weather: Weather, frame: number, top = 0, bottom = PANEL_Y): void {
@@ -43,11 +43,12 @@ export function drawWeatherOverlay(weather: Weather, frame: number, top = 0, bot
   switch (weather) {
     case "rain":
     case "storm": {
-      const count = weather === "storm" ? 90 : 50;
+      const count = weather === "storm" ? 150 : 90;
       for (let i = 0; i < count; i++) {
-        const x = Math.floor((hash01(i, 31) * SCREEN_W + frame * 3.5) % SCREEN_W);
+        const x = Math.floor((hash01(i, 31) * SCREEN_W * 2 + frame * 3.5) % SCREEN_W);
         const y = top + Math.floor((hash01(i, 32) * h + frame * 9) % h);
-        screen.rect(x, y, 1, 3, C.BRIGHTCYAN);
+        screen.rect(x, y, 1, weather === "storm" ? 5 : 4, C.BRIGHTCYAN);
+        screen.px(x + 1, y + 1, C.CYAN);
       }
       if (weather === "storm" && Math.floor(frame / 6) % 37 === 0) {
         screen.rect(0, top, SCREEN_W, h, C.WHITE);
@@ -252,7 +253,7 @@ export class TravelScene implements Scene {
 
     drawStatusPanel(g, PANEL_Y);
     if (blink(1000, 0.55)) {
-      screen.textCentered(SCREEN_W / 2, SCREEN_H - 9, "press SPACE BAR to size up the situation", C.BRIGHTGREEN);
+      screen.textRight(SCREEN_W - 5, SCREEN_H - 9, "SPACE BAR to size up the situation", C.BRIGHTGREEN);
     }
   }
 }

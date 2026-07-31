@@ -77,7 +77,9 @@ export function screenFrame(title: string, opts: { bg?: Color; bar?: Color; ink?
 }
 
 export function footer(msg: string, color: Color = C.YELLOW, y = SCREEN_H - 11): void {
-  if (blink()) screen.textCentered(SCREEN_W / 2, y, msg, color);
+  if (!blink()) return;
+  const text = msg.length > COLS - 1 ? msg.slice(0, COLS - 1) : msg;
+  screen.textCentered(SCREEN_W / 2, y, text, color);
 }
 
 export function pressSpace(y = SCREEN_H - 11): boolean {
@@ -108,6 +110,11 @@ export interface MenuDrawOpts {
   width?: number;
   /** Draw a highlight bar behind the selected row instead of a caret. */
   bar?: boolean;
+  /** When set, the selected item's note is wrapped and drawn from this y. */
+  noteY?: number;
+  noteWidth?: number;
+  /** Truncate labels to this many characters. */
+  maxLabel?: number;
 }
 
 export class Menu {
@@ -171,7 +178,8 @@ export class Menu {
     this.items.forEach((item, i) => {
       const y = o.y + i * lh;
       const selected = i === this.index;
-      const label = `${numbered ? `${i + 1}. ` : ""}${item.label}`;
+      const trimmed = o.maxLabel && item.label.length > o.maxLabel ? `${item.label.slice(0, o.maxLabel - 1)}.` : item.label;
+      const label = `${numbered ? `${i + 1}. ` : ""}${trimmed}`;
       let ink = o.color ?? C.GREY;
       if (item.disabled) ink = o.disabledColor ?? C.DARKGREY;
       else if (selected) ink = o.cursorColor ?? C.WHITE;
@@ -188,11 +196,13 @@ export class Menu {
       }
     });
     const note = this.items[this.index]?.note;
-    if (note) {
-      const lines = wrapText(note, COLS - 6);
-      lines.forEach((ln, i) => {
-        screen.textCentered(SCREEN_W / 2, SCREEN_H - 30 + i * CELL_H, ln, C.BRIGHTGREEN);
-      });
+    if (note && o.noteY !== undefined) {
+      const cols = Math.floor((o.noteWidth ?? SCREEN_W - 24) / CELL_W);
+      wrapText(note, cols)
+        .slice(0, 3)
+        .forEach((ln, i) => {
+          screen.textCentered(SCREEN_W / 2, o.noteY! + i * CELL_H, ln, C.BRIGHTGREEN);
+        });
     }
   }
 }

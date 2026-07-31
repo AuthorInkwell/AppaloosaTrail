@@ -6,10 +6,10 @@
 import { audio } from "../../engine/audio";
 import { input } from "../../engine/input";
 import { Scene, scenes } from "../../engine/scene";
-import { C, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
+import { C, Color, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
 import { Menu, blink, footer, gauge, panel, screenFrame, wrapText } from "../../engine/ui";
 import { TIMBERWOLF } from "../../art/sprites";
-import { drawBush, drawPine, drawRock, drawSky, hash01, skyPalette } from "../../art/scenery";
+import { drawBush, drawPine, drawRock, hash01 } from "../../art/scenery";
 import { drawVista } from "../../art/vistas";
 import { drawPony, drawRig } from "../../art/wagon";
 import { EVERFREE_THEME, VICTORY_THEME } from "../data/music";
@@ -159,19 +159,20 @@ export class ForkScene implements Scene {
     drawVista(this.landmark.id, this.landmark.terrain, { top: 12, bottom: 104, frame: this.frame, rig: g.team });
     screen.hline(0, 104, SCREEN_W, C.GREY);
 
-    panel(4, 108, SCREEN_W - 8, 62, { fill: C.BLACK, border: C.DARKGREY });
+    panel(4, 108, SCREEN_W - 8, 60, { fill: C.BLACK, border: C.DARKGREY });
     screen.text(10, 112, "You may:", C.CYAN);
-    this.menu.draw({ x: 16, y: 124, color: C.GREY, cursorColor: C.WHITE, lineHeight: 10, width: SCREEN_W - 40 });
-
-    const note = this.menu.items[this.menu.index]?.note;
-    if (note) {
-      let y = 172;
-      for (const line of wrapText(note, 52).slice(0, 2)) {
-        screen.text(6, y, line, C.BRIGHTGREEN);
-        y += 8;
-      }
-    }
+    this.menu.draw({
+      x: 16,
+      y: 124,
+      color: C.GREY,
+      cursorColor: C.WHITE,
+      lineHeight: 10,
+      width: SCREEN_W - 40,
+      noteY: 174,
+      noteWidth: 312,
+    });
     screen.textRight(SCREEN_W - 8, 112, `${Math.round(g.bits)} bits`, C.YELLOW);
+    void wrapText;
     void blink;
     void footer;
     void input;
@@ -357,35 +358,56 @@ export class EverfreeScene implements Scene {
 
   draw(): void {
     const g = this.g;
-    const pal = skyPalette("forest", true);
-    drawSky(0, ROAD_TOP, pal);
-    screen.rect(0, 0, SCREEN_W, ROAD_TOP, C.BLACK);
+    screen.clear(C.BLACK);
 
-    // Dense canopy silhouette, parallaxed.
-    for (let layer = 0; layer < 3; layer++) {
-      const speed = 0.2 + layer * 0.35;
-      const color = layer === 0 ? C.BLUE : layer === 1 ? C.GREEN : C.DARKGREY;
-      for (let i = 0; i < 20; i++) {
-        const x = Math.floor((((i * 34 - this.scroll * speed) % 680) + 680) % 680) - 40;
-        drawPine(x, ROAD_TOP - 6 + layer * 4, 1.4 - layer * 0.25, color);
+    // Layered canopy, darkest and largest nearest the camera.
+    const layers: { base: number; scale: number; color: Color; speed: number; step: number }[] = [
+      { base: 52, scale: 0.8, color: C.BLUE, speed: 0.14, step: 22 },
+      { base: 76, scale: 1.15, color: C.GREEN, speed: 0.3, step: 30 },
+      { base: ROAD_TOP + 2, scale: 1.6, color: C.DARKGREY, speed: 0.6, step: 40 },
+    ];
+    layers.forEach((layer, li) => {
+      const span = layer.step * 16;
+      for (let i = 0; i < 16; i++) {
+        const jitter = hash01(i, 80 + li);
+        const x = Math.floor(((i * layer.step - this.scroll * layer.speed) % span + span) % span) - 20;
+        drawPine(
+          x + Math.floor(jitter * layer.step * 0.6),
+          layer.base + Math.floor(hash01(i, 90 + li) * 6),
+          layer.scale * (0.8 + jitter * 0.45),
+          layer.color,
+        );
       }
+    });
+    // Hanging growth along the top of the frame.
+    for (let i = 0; i < 26; i++) {
+      const x = Math.floor(((i * 13 - this.scroll * 0.6) % 340 + 340) % 340) - 10;
+      const len = 4 + Math.floor(hash01(i, 63) * 14);
+      screen.rect(x, 0, 1, len, C.GREEN);
+      screen.px(x, len, C.BRIGHTGREEN);
     }
     // Eyes in the dark.
-    for (let i = 0; i < 6; i++) {
-      if (Math.floor(this.frame / 40 + i) % 5 !== 0) continue;
+    for (let i = 0; i < 8; i++) {
+      if (Math.floor(this.frame / 30 + i) % 6 !== 0) continue;
       const x = Math.floor(hash01(i, 61) * SCREEN_W);
-      const y = 24 + Math.floor(hash01(i, 62) * 50);
+      const y = 20 + Math.floor(hash01(i, 62) * 60);
       screen.px(x, y, C.BRIGHTRED);
       screen.px(x + 3, y, C.BRIGHTRED);
     }
 
-    // The track
-    screen.rect(0, ROAD_TOP, SCREEN_W, ROAD_BOTTOM - ROAD_TOP, C.BROWN);
+    // The track, with a rut down each of the four lanes.
+    screen.rect(0, ROAD_TOP, SCREEN_W, ROAD_BOTTOM - ROAD_TOP + 1, C.BROWN);
     screen.hline(0, ROAD_TOP, SCREEN_W, C.DARKGREY);
-    screen.hline(0, ROAD_BOTTOM - 1, SCREEN_W, C.DARKGREY);
-    for (let i = 0; i < 40; i++) {
-      const x = Math.floor(((i * 12 - this.scroll) % 480 + 480) % 480) - 40;
-      screen.rect(x, ROAD_TOP + 4 + ((i * 7) % (ROAD_BOTTOM - ROAD_TOP - 8)), 5, 1, C.DARKGREY);
+    screen.hline(0, ROAD_BOTTOM, SCREEN_W, C.DARKGREY);
+    for (let lane = 0; lane < LANES; lane++) {
+      const ly = Math.round(this.laneY(lane)) + 3;
+      for (let x = Math.floor(-this.scroll % 16); x < SCREEN_W; x += 16) {
+        screen.rect(x, ly, 9, 1, C.DARKGREY);
+      }
+    }
+    for (let i = 0; i < 30; i++) {
+      const x = Math.floor(((i * 17 - this.scroll * 1.2) % 510 + 510) % 510) - 40;
+      screen.px(x, ROAD_TOP + 3 + ((i * 11) % (ROAD_BOTTOM - ROAD_TOP - 6)), C.YELLOW);
     }
 
     // Hazards
@@ -405,7 +427,7 @@ export class EverfreeScene implements Scene {
           drawRock(h.x + 5, y + 2, 1.3, C.GREY);
           break;
         case "wolf":
-          screen.sprite(TIMBERWOLF, h.x, y - 12);
+          screen.sprite(TIMBERWOLF, h.x, y - 12, { remap: { "6": C.GREEN, C: C.BRIGHTRED, "8": C.BLACK } });
           break;
         case "vine":
           for (let i = 0; i < 12; i++) {
@@ -419,6 +441,7 @@ export class EverfreeScene implements Scene {
     // The rig
     const y = this.laneY(this.lane);
     const flash = this.invuln > 0 && Math.floor(this.frame / 3) % 2 === 0;
+    screen.ellipse(78, y + 3, 22, 2, C.DARKGREY);
     if (!flash) drawRig(60, y + 2, Math.min(3, g.team), this.frame * this.speed);
 
     // HUD

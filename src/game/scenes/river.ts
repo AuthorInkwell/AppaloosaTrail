@@ -49,7 +49,6 @@ export class RiverScene implements Scene {
   private stage: "menu" | "crossing" = "menu";
   private crossT = 0;
   private attempt: Attempt | null = null;
-  private askedAround = false;
 
   constructor(
     private g: GameState,
@@ -100,16 +99,16 @@ export class RiverScene implements Scene {
   private refresh(): void {
     const g = this.g;
     const items = [
-      { label: "Attempt to ford the river", note: "Walk the wagon across. Fine in shallow water, ruinous in deep." },
+      { label: "Ford the river", note: "Walk the wagon across. Fine in shallow water, ruinous in deep." },
       {
-        label: "Caulk the wagon and float it across",
+        label: "Caulk it and float across",
         note:
           g.origin === "earth"
             ? "The Earth Pony way, and you know it well. Best in deep water, risky where rocks lurk."
             : "The Earth Pony way: seal the seams and swim it over. Best in deep water.",
       },
       {
-        label: `Hire a team of pegasi (${this.pegasusCost()} bits)`,
+        label: `Hire pegasi (${this.pegasusCost()} bits)`,
         note:
           g.origin === "pegasus"
             ? "Local flyers charge you half, one professional to another. Very safe."
@@ -119,7 +118,7 @@ export class RiverScene implements Scene {
     ];
     if (g.origin === "unicorn") {
       items.push({
-        label: "Levitate the wagon across",
+        label: "Levitate it across",
         note: "Your horn, your problem. Safe if you are rested; tiring either way.",
       });
     }
@@ -128,8 +127,8 @@ export class RiverScene implements Scene {
       note: "Safe, but you may wait days for your turn.",
       disabled: g.bits < this.river.ferryCost,
     });
-    items.push({ label: "Wait a few days for better conditions", note: "Water drops, food goes, calendar turns." });
-    items.push({ label: "Ask other travellers about the crossing", note: "Somepony always knows." });
+    items.push({ label: "Wait for the water to drop", note: "Water drops, food goes, calendar turns." });
+    items.push({ label: "Ask about the crossing", note: "Somepony on the bank always knows." });
     this.menu.setItems(items);
   }
 
@@ -320,14 +319,13 @@ export class RiverScene implements Scene {
     const picked = this.menu.update();
     if (picked === null) return;
     const label = this.menu.items[picked]?.label ?? "";
-    if (label.startsWith("Attempt to ford")) this.begin("ford");
+    if (label.startsWith("Ford")) this.begin("ford");
     else if (label.startsWith("Caulk")) this.begin("float");
-    else if (label.startsWith("Hire a team")) this.begin("pegasi");
+    else if (label.startsWith("Hire pegasi")) this.begin("pegasi");
     else if (label.startsWith("Levitate")) this.begin("levitate");
     else if (label.startsWith("Take the ferry")) this.begin("ferry");
     else if (label.startsWith("Wait")) this.begin("wait");
-    else if (label.startsWith("Ask other")) {
-      this.askedAround = true;
+    else if (label.startsWith("Ask about")) {
       const hints: string[] = [];
       hints.push(
         this.depth < 2
@@ -365,31 +363,33 @@ export class RiverScene implements Scene {
       return;
     }
 
-    panel(4, VISTA_BOTTOM + 4, 168, 80, { fill: C.BLACK, border: C.DARKGREY });
+    panel(4, VISTA_BOTTOM + 4, 114, 62, { fill: C.BLACK, border: C.DARKGREY });
     screen.text(9, VISTA_BOTTOM + 8, "THE CROSSING", C.YELLOW);
-    screen.text(9, VISTA_BOTTOM + 19, `${this.river.width} feet across`, C.WHITE);
-    screen.text(9, VISTA_BOTTOM + 28, `${this.depth.toFixed(1)} feet deep`, this.depth > 3 ? C.BRIGHTRED : C.WHITE);
-    screen.text(9, VISTA_BOTTOM + 37, `current: ${this.currentLabel()}`, C.BRIGHTCYAN);
-    screen.text(9, VISTA_BOTTOM + 46, `${Math.round(g.bits)} bits on hoof`, C.WHITE);
-    screen.text(9, VISTA_BOTTOM + 55, `${Math.round(g.food)} baskets`, C.WHITE);
-    screen.text(9, VISTA_BOTTOM + 64, `${livingPonies(g).length} ponies, team of ${g.team}`, C.WHITE);
-    if (this.askedAround) screen.text(9, VISTA_BOTTOM + 73, "you have asked around", C.BROWN);
+    screen.text(9, VISTA_BOTTOM + 18, `${this.river.width} ft across`, C.WHITE);
+    screen.text(9, VISTA_BOTTOM + 26, `${this.depth.toFixed(1)} ft deep`, this.depth > 3 ? C.BRIGHTRED : C.WHITE);
+    screen.text(9, VISTA_BOTTOM + 34, `${this.currentLabel()}`, C.BRIGHTCYAN);
+    screen.text(9, VISTA_BOTTOM + 44, `${Math.round(g.bits)} bits`, C.WHITE);
+    screen.text(9, VISTA_BOTTOM + 52, `${Math.round(g.food)} baskets`, C.WHITE);
+    screen.textRight(114, VISTA_BOTTOM + 52, `team ${g.team}`, C.WHITE);
+    void livingPonies;
 
-    panel(176, VISTA_BOTTOM + 4, SCREEN_W - 180, 80, { fill: C.BLACK, border: C.DARKGREY });
-    screen.text(181, VISTA_BOTTOM + 8, "You may:", C.CYAN);
-    this.menu.draw({ x: 186, y: VISTA_BOTTOM + 19, color: C.GREY, cursorColor: C.WHITE, lineHeight: 9, numbered: true });
-
-    const note = this.menu.items[this.menu.index]?.note;
-    if (note) {
-      let y = 186;
-      for (const line of wrapText(note, 52).slice(0, 2)) {
-        screen.text(6, y, line, C.BRIGHTGREEN);
-        y += 8;
-      }
-    }
+    panel(122, VISTA_BOTTOM + 4, SCREEN_W - 126, 62, { fill: C.BLACK, border: C.DARKGREY });
+    screen.text(127, VISTA_BOTTOM + 8, "You may:", C.CYAN);
+    this.menu.draw({
+      x: 131,
+      y: VISTA_BOTTOM + 18,
+      color: C.GREY,
+      cursorColor: C.WHITE,
+      lineHeight: 8,
+      numbered: true,
+      maxLabel: 30,
+      noteY: 180,
+      noteWidth: 312,
+    });
     void blink;
     void footer;
     void input;
+    void wrapText;
   }
 
   private drawCrossing(banks: { nearBank: number; farBank: number }): void {

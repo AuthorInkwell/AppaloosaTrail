@@ -208,11 +208,11 @@ export const DEER: Sprite = {
 };
 
 export const BIRD_A: Sprite = {
-  data: [".77...77..", "..77777e..", "...777...."],
+  data: [".88...88..", "..88888e..", "...888...."],
 };
 
 export const BIRD_B: Sprite = {
-  data: ["..77777...", ".77...77e.", "...777...."],
+  data: ["..88888...", ".88...88e.", "...888...."],
 };
 
 export const TIMBERWOLF: Sprite = {

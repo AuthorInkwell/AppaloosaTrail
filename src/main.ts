@@ -10,6 +10,7 @@ import { RiverScene } from "./game/scenes/river";
 import { ArrivalScene, ForkScene } from "./game/scenes/finale";
 import { setArrivalDispatcher, setTitleFactory } from "./game/scenes/eventrunner";
 import { TitleScene } from "./game/scenes/setup";
+import { session } from "./game/session";
 
 const canvas = document.getElementById("screen") as HTMLCanvasElement | null;
 if (!canvas) throw new Error("canvas #screen missing");
@@ -42,6 +43,35 @@ function toggleFullscreen(): void {
 }
 
 scenes.push(new TitleScene());
+
+// Exposed for the scripted smoke test in tools/smoketest.mjs.
+(window as unknown as { __appaloosaDebug: () => unknown }).__appaloosaDebug = () => {
+  const g = session.game;
+  return {
+    scene: scenes.top?.name ?? null,
+    depth: scenes.depth,
+    game: g
+      ? {
+          day: g.day,
+          miles: Math.round(g.miles),
+          food: Math.round(g.food),
+          bits: Math.round(g.bits),
+          team: g.team,
+          alive: g.ponies.filter((p) => p.alive).length,
+          landmarkIndex: g.landmarkIndex,
+          finished: g.finished,
+          outcome: g.outcome,
+        }
+      : null,
+  };
+};
+
+if (import.meta.env.DEV) {
+  // Dev-only shortcut so the smoke test can reach the late trail quickly.
+  (window as unknown as { __appaloosaCheat: (patch: Record<string, unknown>) => void }).__appaloosaCheat = (patch) => {
+    if (session.game) Object.assign(session.game, patch);
+  };
+}
 
 let last = performance.now();
 let crashed: string | null = null;

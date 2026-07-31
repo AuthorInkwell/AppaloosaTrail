@@ -590,7 +590,7 @@ export function showOutfittingIntro(onDone: () => void): void {
       {
         title: "A word of advice",
         text:
-          "Somepony's grandmother is standing outside the store telling everypony the same thing: two hundred baskets of food, four in the team, and one spare of everything. Nopony has ever regretted listening to her.",
+          "Somepony's grandmother is standing outside the store telling everypony the same thing: four hundred baskets of food, six in the team, and one spare of everything. Nopony has ever regretted listening to her.",
       },
     ],
     onDone,
