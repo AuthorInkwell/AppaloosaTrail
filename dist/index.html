@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Appaloosa Trail</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #101014;
+        overflow: hidden;
+        font-family: monospace;
+        color: #aaaaaa;
+      }
+      #stage {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+      }
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        background: #000;
+        box-shadow: 0 0 0 2px #2a2a33, 0 0 40px rgba(0, 0, 0, 0.9);
+      }
+      #hint {
+        position: fixed;
+        bottom: 4px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 11px;
+        color: #44444e;
+        pointer-events: none;
+        user-select: none;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-BFPwk6CV.js"></script>
+  </head>
+  <body>
+    <div id="stage"><canvas id="screen" width="320" height="200"></canvas></div>
+    <div id="hint">arrow keys / number keys / ENTER &nbsp;&bull;&nbsp; M toggles sound &nbsp;&bull;&nbsp; F toggles fullscreen</div>
+  </body>
+</html>
