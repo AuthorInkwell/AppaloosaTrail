@@ -46,7 +46,8 @@ export function skyPalette(terrain: Terrain, night = false): SkyPalette {
     case "hills":
       return { sky: C.CYAN, skyAlt: C.BRIGHTCYAN, haze: C.GREY, ground: C.GREEN, groundAlt: C.BROWN, detail: C.BRIGHTGREEN };
     case "swamp":
-      return { sky: C.GREY, skyAlt: C.CYAN, haze: C.DARKGREY, ground: C.GREEN, groundAlt: C.DARKGREY, detail: C.BRIGHTGREEN };
+      // Muddy banks so the green bog water reads as water and not as grass.
+      return { sky: C.GREY, skyAlt: C.CYAN, haze: C.DARKGREY, ground: C.BROWN, groundAlt: C.DARKGREY, detail: C.GREEN };
     case "town":
       return { sky: C.BRIGHTCYAN, skyAlt: C.CYAN, haze: C.BROWN, ground: C.BROWN, groundAlt: C.DARKGREY, detail: C.YELLOW };
     case "plains":

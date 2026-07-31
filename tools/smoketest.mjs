@@ -203,7 +203,23 @@ async function main() {
   await sleep(300);
   await shot("saved");
   await until("save", "Space", 6);
-  await press("Escape");
+  const before = await state();
+
+  console.log("quit to title and reload the save");
+  await press("Digit4"); // quit to the title screen
+  await press("Digit1"); // confirm
+  await until("title", "Space", 8);
+  await press("Digit2"); // continue a saved journey
+  await expect("load");
+  await shot("load-menu");
+  await press("Digit1");
+  await until("travel", "Space", 8);
+  const after = await state();
+  if (!after.game || after.game.miles !== before.game.miles) {
+    throw new Error(`load mismatch: saved at ${before.game?.miles} mi, loaded ${after.game?.miles} mi`);
+  }
+  console.log(`  loaded at ${after.game.miles} mi, day ${after.game.day}`);
+  await shot("loaded");
   await backToTravel();
 
   if (arg("skip-ahead", "")) {

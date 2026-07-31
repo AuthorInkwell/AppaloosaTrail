@@ -242,8 +242,8 @@ export function drawSupplyStrip(g: GameState, x: number, y: number, w: number): 
   ];
   // Drop trailing entries until the line clears the right-hand readout.
   const budget = Math.floor((w - 12) / CELL_W) - right.length;
-  while (parts.length > 1 && parts.join("  \u0006  ").length > budget) parts.pop();
-  screen.text(x + 4, y + 2, parts.join("  \u0006  "), C.WHITE);
+  while (parts.length > 1 && parts.join(" \u0006 ").length > budget) parts.pop();
+  screen.text(x + 4, y + 2, parts.join(" \u0006 "), C.WHITE);
   screen.textRight(x + w - 4, y + 2, right, healthColor(partyHealth(g)));
 }
 

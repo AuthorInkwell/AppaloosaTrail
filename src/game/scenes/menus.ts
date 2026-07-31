@@ -106,7 +106,7 @@ export class SizeUpScene implements Scene {
 
   draw(): void {
     const g = session.current;
-    panel(20, 16, SCREEN_W - 40, SCREEN_H - 34, { fill: C.BLACK, border: C.GREY, shadow: true, double: true });
+    panel(20, 16, SCREEN_W - 40, SCREEN_H - 30, { fill: C.BLACK, border: C.GREY, shadow: true, double: true });
     screen.textCentered(SCREEN_W / 2, 22, "SIZING UP THE SITUATION", C.YELLOW);
     screen.hline(30, 31, SCREEN_W - 60, C.DARKGREY);
     const next = nextLandmarkInfo(g);
@@ -119,15 +119,15 @@ export class SizeUpScene implements Scene {
     screen.textCentered(SCREEN_W / 2, 44, "You may:", C.CYAN);
     this.menu.draw({
       x: 46,
-      y: 56,
+      y: 54,
       color: C.GREY,
       cursorColor: C.WHITE,
-      lineHeight: 11,
+      lineHeight: 10,
       width: SCREEN_W - 96,
       detailColor: C.BROWN,
     });
-    drawSupplyStrip(g, 28, SCREEN_H - 30, SCREEN_W - 56);
-    if (blink()) screen.textCentered(SCREEN_W / 2, SCREEN_H - 15, "1 or SPACE BAR to keep travelling", C.BRIGHTGREEN);
+    drawSupplyStrip(g, 28, SCREEN_H - 42, SCREEN_W - 56);
+    if (blink()) screen.textCentered(SCREEN_W / 2, SCREEN_H - 26, "1 or SPACE BAR to keep travelling", C.BRIGHTGREEN);
   }
 }
 

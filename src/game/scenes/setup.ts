@@ -322,7 +322,8 @@ export class LoadScene implements Scene {
         screen.text(76, y + 5, "- empty -", C.DARKGREY);
       } else {
         screen.text(76, y + 5, s.master, C.WHITE);
-        screen.text(28, y + 16, `${s.origin} from ${ORIGINS[s.origin as Origin]?.home ?? "?"}`, C.BRIGHTCYAN);
+        const info = ORIGINS[s.origin as Origin];
+        screen.text(28, y + 16, info ? `${info.name} of ${info.home}` : s.origin, C.BRIGHTCYAN);
         screen.textRight(SCREEN_W - 28, y + 5, s.date, C.WHITE);
         screen.textRight(SCREEN_W - 28, y + 16, `${s.miles} of ${TOTAL_MILES} miles`, C.GREY);
         screen.text(28, y + 25, `${s.survivors} ponies still travelling`, C.GREY);

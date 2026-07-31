@@ -251,19 +251,20 @@ export class StoreScene implements Scene {
     // Selected item description
     const item = STORE_ITEMS[this.index]!;
     const descY = top + 12 + STORE_ITEMS.length * 13 + 2;
-    panel(8, descY, SCREEN_W - 16, 26, { fill: C.BLACK, border: C.DARKGREY });
+    panel(8, descY, SCREEN_W - 16, 30, { fill: C.BLACK, border: C.DARKGREY });
     let dy = descY + 4;
     for (const line of wrapText(item.desc, 50).slice(0, 2)) {
       screen.text(12, dy, line, C.BRIGHTGREEN);
       dy += CELL_H;
     }
     if (item.id === "team") {
-      const hint = g.team > 0 ? `at most ${MAX_TEAM}; dismiss for ${TEAM_DISMISS_REFUND} bits each` : `at most ${MAX_TEAM} in the team`;
-      screen.text(12, descY + 17, hint, C.BROWN);
+      const hint =
+        g.team > 0 ? `at most ${MAX_TEAM}; dismiss for ${TEAM_DISMISS_REFUND} bits each` : `at most ${MAX_TEAM} in the team`;
+      screen.text(12, descY + 20, hint, C.BROWN);
     }
 
     // Totals
-    const totY = descY + 29;
+    const totY = descY + 32;
     const total = this.total();
     screen.rect(8, totY, SCREEN_W - 16, 11, total > g.bits ? C.RED : C.GREEN);
     screen.frame(8, totY, SCREEN_W - 16, 11, C.GREY);
