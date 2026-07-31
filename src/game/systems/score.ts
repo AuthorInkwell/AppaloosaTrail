@@ -48,7 +48,13 @@ export function scoreRun(g: GameState): ScoreReport {
   if (g.bits > 0) lines.push({ label: "Bits", detail: `${Math.round(g.bits)} left over`, points: Math.round(g.bits / 4) });
 
   const speedBonus = Math.max(0, Math.round((150 - g.day) * 6));
-  if (speedBonus > 0) lines.push({ label: "Arrived early", detail: `${g.day} days on the trail`, points: speedBonus });
+  if (speedBonus > 0) {
+    lines.push({
+      label: "Arrived early",
+      detail: `${g.day} ${g.day === 1 ? "day" : "days"} on the trail`,
+      points: speedBonus,
+    });
+  }
 
   if (g.route === "everfree" && g.flags["everfree-clean"]) {
     lines.push({ label: "Everfree crossing", detail: "not a scratch", points: 250 });
