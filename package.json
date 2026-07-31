@@ -1,0 +1,19 @@
+{
+  "name": "appaloosa-trail",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The Appaloosa Trail - a pixel-art tribute to MECC's The Oregon Trail, set in Equestria.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node tools/smoketest.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.4.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}
