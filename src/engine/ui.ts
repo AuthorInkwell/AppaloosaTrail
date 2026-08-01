@@ -54,6 +54,8 @@ export interface PanelOpts {
   border?: Color;
   shadow?: boolean;
   double?: boolean;
+  /** Name used when the layout checker reports overflow. */
+  label?: string;
 }
 
 export function panel(x: number, y: number, w: number, h: number, opts: PanelOpts = {}): void {
@@ -63,6 +65,7 @@ export function panel(x: number, y: number, w: number, h: number, opts: PanelOpt
   screen.rect(x, y, w, h, fill);
   screen.frame(x, y, w, h, border);
   if (opts.double) screen.frame(x + 2, y + 2, w - 4, h - 4, border);
+  screen.noteRegion(x, y, w, h, opts.double ? 4 : 2, opts.label ?? "panel");
 }
 
 /** The standard chrome: outer border plus a reverse-video title bar. */
@@ -70,6 +73,7 @@ export function screenFrame(title: string, opts: { bg?: Color; bar?: Color; ink?
   const bg = opts.bg ?? C.BLACK;
   screen.clear(bg);
   screen.frame(0, 0, SCREEN_W, SCREEN_H, opts.border ?? C.GREY);
+  screen.noteRegion(0, 0, SCREEN_W, SCREEN_H, 1, "screen frame");
   if (title) {
     screen.rect(1, 1, SCREEN_W - 2, 11, opts.bar ?? C.GREY);
     screen.textCentered(SCREEN_W / 2, 3, title, opts.ink ?? C.BLACK);
@@ -113,6 +117,7 @@ export interface MenuDrawOpts {
   /** When set, the selected item's note is wrapped and drawn from this y. */
   noteY?: number;
   noteWidth?: number;
+  noteLines?: number;
   /** Truncate labels to this many characters. */
   maxLabel?: number;
 }
@@ -199,7 +204,7 @@ export class Menu {
     if (note && o.noteY !== undefined) {
       const cols = Math.floor((o.noteWidth ?? SCREEN_W - 24) / CELL_W);
       wrapText(note, cols)
-        .slice(0, 3)
+        .slice(0, o.noteLines ?? 3)
         .forEach((ln, i) => {
           screen.textCentered(SCREEN_W / 2, o.noteY! + i * CELL_H, ln, C.BRIGHTGREEN);
         });

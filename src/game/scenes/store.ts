@@ -15,6 +15,7 @@ import { Landmark } from "../data/trail";
 import { STORE_ITEMS, StoreItem, TEAM_DISMISS_REFUND, grantItem, lineCost, stateQty, unitPrice } from "../data/store";
 import { GameState, MAX_TEAM, MIN_TEAM_TO_START, livingPonies, log, spend } from "../state";
 import { askChoice, drawSupplyStrip, showPages } from "./common";
+import { currentMusicSlot, setMusic } from "../systems/music";
 
 const ICONS: Partial<Record<string, typeof BASKET>> = {
   food: BASKET,
@@ -48,6 +49,7 @@ export class StoreScene implements Scene {
   }
 
   enter(): void {
+    setMusic("store");
     if (this.opts.intro && !this.g.flags["seen-outfitting"]) {
       this.g.flags["seen-outfitting"] = true;
       showPages([
@@ -176,6 +178,7 @@ export class StoreScene implements Scene {
   }
 
   update(): void {
+    if (currentMusicSlot() !== "store") setMusic("store");
     if (input.pressed("ArrowUp")) {
       this.index = (this.index - 1 + STORE_ITEMS.length) % STORE_ITEMS.length;
       audio.sfx("move");

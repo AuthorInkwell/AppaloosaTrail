@@ -9,7 +9,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "smoke": "node tools/smoketest.mjs"
+    "smoke": "node tools/smoketest.mjs",
+    "layout": "node tools/layout-audit.mjs",
+    "audio": "node tools/audio-check.mjs",
+    "paths": "node tools/paths.mjs"
   },
   "devDependencies": {
     "puppeteer-core": "^25.4.0",

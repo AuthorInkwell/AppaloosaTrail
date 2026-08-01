@@ -155,6 +155,7 @@ export const ORIGINS: Record<Origin, OriginInfo> = {
       "Magic can mend a broken axle or wheel",
       "No score bonus at journey's end",
     ],
+    // Perk lines must stay under 42 characters to fit the origin panel.
   },
   pegasus: {
     id: "pegasus",
@@ -183,7 +184,7 @@ export const ORIGINS: Record<Origin, OriginInfo> = {
     perks: [
       "Fewest starting bits (800)",
       "Best foraging yields",
-      "Caulk-and-float ('the Earth Pony way') is safer",
+      "Safest at caulking and floating",
       "Repairs and hard pulls come easier",
       "Largest score bonus at journey's end",
     ],

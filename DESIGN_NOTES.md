@@ -81,10 +81,37 @@ replacement art is a matter of editing those strings — no pipeline, no files t
 
 ## Music
 
-Six short loops (title, landmark, foraging, Everfree, victory, memorial) written as step patterns in
-`src/game/data/music.ts`, played on square, triangle and noise voices. They are deliberately simple.
-If you want a specific melody, the notation is one token per sixteenth note: note names like `C4`
-and `F#3`, `.` for a rest, `=` to hold the previous note, and `x` for a noise hit.
+There are nine music slots: title, store, travel, landmark, forage, river, everfree, victory and
+memorial. Travel and river are silent by default, which is what the 1990 original did.
+
+**Sending me music.** Put a file in `public/music/` named after the slot and it replaces the
+built-in tune on the next reload — no manifest to edit, because a small Vite plugin publishes a
+listing of that folder. **MIDI is the format to send.** It is played through the game's own square,
+triangle and noise voices rather than a soundfont, so it still sounds like the rest of the game, and
+it stays editable afterwards. Channel 10 becomes noise percussion on the standard drum map; of the
+remaining channels the lowest-average-pitch one becomes the triangle bass and the rest become square
+leads; chords are thinned to four simultaneous voices the way a hand-made chip arrangement would be.
+Tempo changes are honoured; pitch bend, controllers, program changes and velocity curves are ignored.
+Two to four parts works best. `.ogg`/`.mp3`/`.wav` files are also accepted and play verbatim on a
+loop, if you would rather send a finished render.
+
+**The built-ins** are written as step patterns in `src/game/data/music.ts`: one token per sixteenth
+note, note names like `C4` and `F#3`, `.` for a rest, `=` to hold the previous note, `x` for a noise
+hit. They are now arranged in four-line sections (title runs verse / verse / bridge / bridge /
+middle eight / middle eight / verse / verse) so the loops last twenty to thirty seconds rather than
+seven, but they are still placeholder-grade compared to anything written by a person.
+
+## Keeping the text inside its boxes
+
+Text overflow is easy to introduce and hard to spot, so it is checked automatically rather than by
+eye. Open the game with `?layout=1` and every string drawn is compared against the screen edges and
+against whatever panel it sits inside; anything that escapes is reported to the console once.
+`npm run layout` turns that on and then walks every screen, every one of the forty-one random events
+including each of their choices, every landmark, river and the fork, the minigames, the memorial and
+both endings, entering maximum-length pony names along the way. It should always report nothing.
+
+When adding a screen, call `panel(...)` for boxes (it registers itself with the checker), keep menu
+labels inside the `maxLabel` you pass, and re-run the audit.
 
 ## Known gaps and likely next steps
 

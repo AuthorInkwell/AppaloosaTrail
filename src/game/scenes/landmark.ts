@@ -9,7 +9,6 @@ import { Scene, scenes } from "../../engine/scene";
 import { C, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
 import { Menu, blink, footer, panel, screenFrame } from "../../engine/ui";
 import { drawVista } from "../../art/vistas";
-import { LANDMARK_THEME } from "../data/music";
 import { Landmark } from "../data/trail";
 import { gatherTalk } from "../data/talk";
 import { session } from "../session";
@@ -18,6 +17,7 @@ import { ForageScene } from "./forage";
 import { RestScene, SizeUpScene } from "./menus";
 import { StoreScene } from "./store";
 import { drawSupplyStrip, showPages } from "./common";
+import { currentMusicSlot, setMusic } from "../systems/music";
 
 const LORE: Record<string, string> = {
   "pioneers-bluff":
@@ -60,7 +60,7 @@ export class LandmarkScene implements Scene {
   ) {}
 
   enter(): void {
-    audio.playSong(LANDMARK_THEME);
+    setMusic("landmark");
     audio.sfx("fanfare");
     this.refresh();
     if (!this.g.flags[`arrived:${this.landmark.id}`]) {
@@ -78,7 +78,7 @@ export class LandmarkScene implements Scene {
   }
 
   exit(): void {
-    audio.stopMusic();
+    setMusic(null);
   }
 
   private refresh(): void {
@@ -97,6 +97,7 @@ export class LandmarkScene implements Scene {
 
   update(dt: number): void {
     this.frame += dt * 60;
+    if (currentMusicSlot() !== "landmark") setMusic("landmark");
     const picked = this.menu.update();
     if (picked === null) return;
     const label = this.labelAt(picked);
@@ -148,9 +149,9 @@ export class LandmarkScene implements Scene {
     });
     screen.hline(0, 104, SCREEN_W, C.GREY);
 
-    panel(6, 108, 178, 74, { fill: C.BLACK, border: C.DARKGREY });
-    screen.text(12, 112, "You may:", C.CYAN);
-    this.menu.draw({ x: 18, y: 124, color: C.GREY, cursorColor: C.WHITE, lineHeight: 9 });
+    panel(6, 108, 178, 74, { fill: C.BLACK, border: C.DARKGREY, label: "landmark menu" });
+    screen.text(12, 111, "You may:", C.CYAN);
+    this.menu.draw({ x: 18, y: 122, color: C.GREY, cursorColor: C.WHITE, lineHeight: 8, maxLabel: 25 });
 
     panel(188, 108, SCREEN_W - 194, 74, { fill: C.BLACK, border: C.DARKGREY });
     screen.text(194, 112, formatDate(g.date), C.YELLOW);

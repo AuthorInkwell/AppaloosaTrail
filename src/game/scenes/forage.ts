@@ -13,11 +13,11 @@ import { Menu, blink, footer, gauge, panel, screenFrame, wrapText } from "../../
 import { APPLE, BERRIES, BIRD_A, BIRD_B, DEER, GRASSES, NUTS } from "../../art/sprites";
 import { drawBush, drawGroundDetail, drawPine, drawTree, hash01, skyPalette } from "../../art/scenery";
 import { drawPony, drawWagon } from "../../art/wagon";
-import { FORAGE_THEME } from "../data/music";
 import { terrainAt } from "../data/trail";
 import { GameState, log } from "../state";
 import { passDays } from "../systems/travel";
 import { Page, showPages } from "./common";
+import { setMusic } from "../systems/music";
 
 interface ForageOption {
   label: string;
@@ -103,7 +103,7 @@ export class ForageScene implements Scene {
   }
 
   exit(): void {
-    audio.stopMusic();
+    setMusic(null);
   }
 
   private begin(option: ForageOption): void {
@@ -116,7 +116,7 @@ export class ForageScene implements Scene {
     this.stolen = 0;
     this.px = 150;
     this.py = 120;
-    audio.playSong(FORAGE_THEME);
+    setMusic("forage");
   }
 
   private carryLimit(): number {
@@ -203,7 +203,7 @@ export class ForageScene implements Scene {
 
   private finish(early: boolean): void {
     this.stage = "done";
-    audio.stopMusic();
+    setMusic(null);
     const g = this.g;
     const limit = this.carryLimit();
     const carried = Math.min(this.gathered, limit);

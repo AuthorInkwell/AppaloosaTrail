@@ -9,7 +9,6 @@ import { Scene, scenes } from "../../engine/scene";
 import { C, CELL_H, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
 import { TextField, blink, footer, panel, screenFrame, wrapText } from "../../engine/ui";
 import { GRAVE } from "../../art/sprites";
-import { MEMORIAL_THEME } from "../data/music";
 import { EventContext, TrailEvent, availableChoices, eventText, markEventSeen } from "../data/events";
 import { Landmark } from "../data/trail";
 import { session } from "../session";
@@ -18,6 +17,7 @@ import { terrainAt } from "../data/trail";
 import { DayResult, passDays } from "../systems/travel";
 import { addMarker } from "../systems/epitaphs";
 import { askChoice, showMessages, showPages } from "./common";
+import { setMusic } from "../systems/music";
 
 export type Step = (next: () => void) => void;
 
@@ -135,12 +135,12 @@ export class MemorialScene implements Scene {
   ) {}
 
   enter(): void {
-    audio.playSong(MEMORIAL_THEME);
+    setMusic("memorial");
     audio.sfx("sad");
   }
 
   exit(): void {
-    audio.stopMusic();
+    setMusic(null);
   }
 
   private current(): PonyState {
@@ -226,13 +226,13 @@ export class GameOverScene implements Scene {
   constructor(private g: GameState) {}
 
   enter(): void {
-    audio.stopMusic();
+    setMusic(null);
     audio.sfx("sad");
-    audio.playSong(MEMORIAL_THEME);
+    setMusic("memorial");
   }
 
   exit(): void {
-    audio.stopMusic();
+    setMusic(null);
   }
 
   update(dt: number): void {
