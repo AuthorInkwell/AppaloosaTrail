@@ -84,7 +84,7 @@ export class Pages implements Scene {
     const artH = page.art ? (page.artHeight ?? 42) : 0;
     const bodyH = this.lines.length * CELL_H;
     const titleH = page.title ? CELL_H + 6 : 0;
-    const h = Math.max(52, 20 + titleH + artH + bodyH);
+    const h = Math.max(56, 24 + titleH + artH + bodyH);
     const x = (SCREEN_W - PANEL_W) / 2;
     const y = Math.max(14, (SCREEN_H - h) / 2 - 8);
 
@@ -105,7 +105,7 @@ export class Pages implements Scene {
     }
     if (blink(700, 0.6)) {
       const label = this.index < this.pages.length - 1 ? "more \u0004" : "press SPACE BAR";
-      screen.textRight(x + PANEL_W - 8, y + h - CELL_H - 3, label, C.CYAN);
+      screen.textRight(x + PANEL_W - 9, y + h - CELL_H - 5, label, C.CYAN);
     }
   }
 }
@@ -154,10 +154,10 @@ export class ChoiceScene implements Scene {
   draw(): void {
     const w = this.opts.width ?? PANEL_W;
     const artH = this.opts.art ? (this.opts.artHeight ?? 40) : 0;
-    const h = 30 + artH + this.lines.length * CELL_H + this.menu.items.length * (CELL_H + 2);
+    const h = 32 + artH + this.lines.length * CELL_H + this.menu.items.length * (CELL_H + 2);
     const x = (SCREEN_W - w) / 2;
     const y = Math.max(10, (SCREEN_H - h) / 2 - 6);
-    panel(x, y, w, h, { fill: C.BLACK, border: C.GREY, shadow: true, double: true });
+    panel(x, y, w, h, { fill: C.BLACK, border: C.GREY, shadow: true, double: true, label: "choice" });
     let cy = y + 8;
     screen.textCentered(SCREEN_W / 2, cy, this.title.toUpperCase(), C.YELLOW);
     screen.hline(x + 10, cy + CELL_H, w - 20, C.DARKGREY);
@@ -171,7 +171,15 @@ export class ChoiceScene implements Scene {
       cy += CELL_H;
     }
     cy += 3;
-    this.menu.draw({ x: x + 16, y: cy, cursorColor: C.BRIGHTGREEN, color: C.GREY, width: w - 32, bar: true });
+    this.menu.draw({
+      x: x + 14,
+      y: cy,
+      cursorColor: C.BRIGHTGREEN,
+      color: C.GREY,
+      width: w - 28,
+      bar: true,
+      maxLabel: Math.floor((w - 34) / CELL_W) - 3,
+    });
   }
 }
 

@@ -363,7 +363,7 @@ export class RiverScene implements Scene {
       return;
     }
 
-    panel(4, VISTA_BOTTOM + 4, 114, 62, { fill: C.BLACK, border: C.DARKGREY });
+    panel(4, VISTA_BOTTOM + 4, 114, 60, { fill: C.BLACK, border: C.DARKGREY, label: "crossing info" });
     screen.text(9, VISTA_BOTTOM + 8, "THE CROSSING", C.YELLOW);
     screen.text(9, VISTA_BOTTOM + 18, `${this.river.width} ft across`, C.WHITE);
     screen.text(9, VISTA_BOTTOM + 26, `${this.depth.toFixed(1)} ft deep`, this.depth > 3 ? C.BRIGHTRED : C.WHITE);
@@ -373,18 +373,18 @@ export class RiverScene implements Scene {
     screen.text(9, VISTA_BOTTOM + 52, `${Math.round(g.food)} baskets`, C.WHITE);
     void livingPonies;
 
-    panel(122, VISTA_BOTTOM + 4, SCREEN_W - 126, 62, { fill: C.BLACK, border: C.DARKGREY });
-    screen.text(127, VISTA_BOTTOM + 8, "You may:", C.CYAN);
+    panel(122, VISTA_BOTTOM + 4, SCREEN_W - 126, 60, { fill: C.BLACK, border: C.DARKGREY, label: "crossing menu" });
     this.menu.draw({
-      x: 131,
-      y: VISTA_BOTTOM + 18,
+      x: 136,
+      y: VISTA_BOTTOM + 6,
       color: C.GREY,
       cursorColor: C.WHITE,
       lineHeight: 8,
       numbered: true,
-      maxLabel: 30,
+      maxLabel: 26,
       noteY: 180,
       noteWidth: 312,
+      noteLines: 2,
     });
     void blink;
     void footer;

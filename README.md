@@ -33,6 +33,40 @@ There are no runtime dependencies. The whole game is a static page.
 | M | sound on/off |
 | F | fullscreen |
 
+Music, sound effects and volume can be set separately from **Sound and music** on
+the title screen, and the settings persist.
+
+## Using your own music
+
+Drop a file into `public/music/` named after the slot it should play in and
+reload. That is the whole process; there is no manifest to edit.
+
+| Filename                     | Plays during                                         |
+| ---------------------------- | ---------------------------------------------------- |
+| `title`                      | the title screen                                     |
+| `store`                      | the general store and trading posts                  |
+| `travel`                     | travelling the trail (silent by default, as in 1990) |
+| `landmark`                   | arriving at a town or landmark                       |
+| `forage`                     | the foraging minigame                                |
+| `river`                      | water crossings (silent by default)                  |
+| `everfree`                   | driving through the Everfree Forest                  |
+| `victory`                    | arriving at Appaloosa                                |
+| `memorial`                   | a pony's memorial, and the losing ending             |
+
+**`.mid` / `.midi` is the format to send.** MIDI is played back through the
+game's own square, triangle and noise voices rather than a General MIDI
+soundfont, so imported music still sounds like the rest of the game. Channel 10
+becomes noise percussion using the standard drum map; of the remaining channels
+the one with the lowest average pitch becomes the triangle bass and the rest
+become square leads; dense chords are thinned to four voices. Tempo changes are
+honoured, and pitch bend, controllers and program changes are ignored.
+
+**`.ogg` / `.mp3` / `.wav` / `.m4a` also work** and are played verbatim on a
+loop, for finished chiptune renders.
+
+See [public/music/README.md](public/music/README.md) for the details, and the
+**Sound and music** screen in game lists whatever it found.
+
 ## What is in the vertical slice
 
 - **Three origins** — Unicorn of Canterlot, Pegasus of Cloudsdale, Earth Pony of Fillydelphia —
@@ -86,18 +120,32 @@ src/
     scenes/   title/setup, store, travel, menus, landmarks, rivers,
               foraging, the finale, shared modal furniture
 tools/
-  smoketest.mjs   scripted playthrough that drives the real game in Chrome
+  smoketest.mjs     scripted playthrough that drives the real game in Chrome
+  layout-audit.mjs  walks every screen and reports text that escapes its box
+  audio-check.mjs   confirms every music slot actually reaches the output
+  paths.mjs         covers branches the main playthrough misses
+  shots.mjs         captures documentation screenshots
+  make-test-midi.mjs  writes a sample .mid for testing the importer
 ```
 
-`node tools/smoketest.mjs` plays the game against a running dev server, screenshots every stage and
-fails on any console error. `--skip-ahead 1540` jumps to the late trail to exercise the endgame.
+All four harnesses drive the real game in headless Chrome against a running dev server and fail on
+any console error.
+
+- `npm run smoke` plays a whole journey, screenshotting every stage. `--skip-ahead 1540` jumps to
+  the late trail to exercise the endgame.
+- `npm run layout` opens the game with `?layout=1`, which turns on a checker that reports any text
+  drawn outside its panel or off the screen, then walks every screen, every random event and every
+  landmark. It should always report nothing.
+- `npm run audio` samples the master output while each music slot plays, so a silent or broken track
+  fails the run rather than going unnoticed.
 
 ## Art and audio
 
 All of it is generated in code: sprites are authored as strings of palette digits in
 `src/art/sprites.ts`, landscapes and landmark vistas are painted procedurally in `src/art/scenery.ts`
-and `src/art/vistas.ts`, and the music is step patterns fed to square, triangle and noise voices in
-`src/engine/audio.ts`. Nothing is loaded from disk, so there are no assets to lose track of.
+and `src/art/vistas.ts`, and the built-in music is step patterns fed to square, triangle and noise
+voices in `src/engine/audio.ts`. Nothing is loaded from disk unless you put music in `public/music`,
+so there are no assets to lose track of.
 
 See [DESIGN_NOTES.md](DESIGN_NOTES.md) for what was interpreted, what was invented to fill gaps, and
 what would most benefit from proper artwork.

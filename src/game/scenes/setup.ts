@@ -5,7 +5,7 @@ import { input } from "../../engine/input";
 import { rng } from "../../engine/rng";
 import { Scene, scenes } from "../../engine/scene";
 import { C, CELL_H, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
-import { COLS, Menu, TextField, blink, footer, panel, screenFrame, wrapText } from "../../engine/ui";
+import { COLS, Menu, TextField, blink, footer, gauge, panel, screenFrame, wrapText } from "../../engine/ui";
 import {
   drawCloud,
   drawGroundDetail,
@@ -17,7 +17,6 @@ import {
   skyPalette,
 } from "../../art/scenery";
 import { drawPony, drawRig } from "../../art/wagon";
-import { TITLE_THEME } from "../data/music";
 import { randomPartyNames, randomPonyName } from "../data/names";
 import { TOTAL_MILES, TRAIL } from "../data/trail";
 import { session } from "../session";
@@ -27,6 +26,7 @@ import { SAVE_SLOTS, SaveSummary, loadGame, summarise } from "../systems/save";
 import { StoreScene } from "./store";
 import { TravelScene } from "./travel";
 import { showPages } from "./common";
+import { currentMusicSlot, importedSlots, refreshMusic, setMusic } from "../systems/music";
 
 export const PARTY_SIZE = 5;
 
@@ -42,21 +42,17 @@ export class TitleScene implements Scene {
     { label: "Continue a saved journey" },
     { label: "Learn about the trail" },
     { label: "See the Appaloosa Hall of Fame" },
-    { label: "Turn sound off" },
+    { label: "Sound and music" },
     { label: "About this game" },
   ]);
 
   enter(): void {
-    audio.playSong(TITLE_THEME);
-    this.refreshSoundLabel();
-  }
-
-  private refreshSoundLabel(): void {
-    this.menu.items[4] = { label: audio.muted ? "Turn sound on" : "Turn sound off" };
+    setMusic("title");
   }
 
   update(dt: number): void {
     this.frame += dt * 60;
+    if (currentMusicSlot() !== "title") setMusic("title");
     const picked = this.menu.update();
     if (picked === null) return;
     switch (picked) {
@@ -73,8 +69,7 @@ export class TitleScene implements Scene {
         scenes.push(new HallOfFameScene());
         break;
       case 4:
-        audio.toggleMute();
-        this.refreshSoundLabel();
+        scenes.push(new OptionsScene());
         break;
       case 5:
         scenes.push(new AboutScene());
@@ -111,7 +106,7 @@ export class TitleScene implements Scene {
     screen.textCentered(SCREEN_W / 2, 108, "You may:", C.CYAN);
     this.menu.draw({ x: 48, y: 120, cursorColor: C.WHITE, color: C.GREY, lineHeight: 9 });
 
-    screen.textCentered(SCREEN_W / 2, SCREEN_H - 16, "A fan tribute. My Little Pony is the property of Hasbro.", C.DARKGREY);
+    screen.textCentered(SCREEN_W / 2, SCREEN_H - 16, "A fan tribute. My Little Pony is property of Hasbro.", C.DARKGREY);
     if (blink(1100, 0.5)) {
       screen.textCentered(SCREEN_W / 2, SCREEN_H - 8, "press a number, or arrow keys and RETURN", C.BROWN);
     }
@@ -222,8 +217,98 @@ export class AboutScene extends TextScreen {
         "  \u0004 In the store: arrows to choose, left/right to change amounts, RETURN to buy.",
         "  \u0004 M toggles sound. F toggles fullscreen.",
         "  \u0004 ESC backs out of most screens.",
+        "",
+        "Music and sound effects can be set separately from the title screen, and your own music can be dropped into the game's music folder.",
       ].join("\n"),
     ]);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sound and music
+// ---------------------------------------------------------------------------
+
+export class OptionsScene implements Scene {
+  readonly name = "options";
+  private index = 0;
+  private rows = 3;
+
+  update(): void {
+    if (input.pressed("ArrowUp")) {
+      this.index = (this.index - 1 + this.rows + 1) % (this.rows + 1);
+      audio.sfx("move");
+    }
+    if (input.pressed("ArrowDown")) {
+      this.index = (this.index + 1) % (this.rows + 1);
+      audio.sfx("move");
+    }
+    const left = input.pressed("ArrowLeft");
+    const right = input.pressed("ArrowRight");
+    const toggle = input.confirm() || input.pressed("Enter");
+
+    if (this.index === 0 && (left || right || toggle)) {
+      audio.setMusicEnabled(!audio.settings.music);
+      if (audio.settings.music) refreshMusic();
+      audio.sfx("select");
+    } else if (this.index === 1 && (left || right || toggle)) {
+      audio.setEffectsEnabled(!audio.settings.effects);
+      audio.sfx("select");
+    } else if (this.index === 2 && (left || right)) {
+      audio.setVolume(audio.settings.volume + (right ? 0.1 : -0.1));
+      audio.sfx("move");
+    } else if (this.index === 3 && toggle) {
+      audio.sfx("back");
+      scenes.pop();
+      return;
+    }
+    if (input.cancel()) {
+      audio.sfx("back");
+      scenes.pop();
+    }
+  }
+
+  draw(): void {
+    screenFrame("SOUND AND MUSIC");
+    const rows: { label: string; value: string }[] = [
+      { label: "Music", value: audio.settings.music ? "on" : "off" },
+      { label: "Sound effects", value: audio.settings.effects ? "on" : "off" },
+      { label: "Volume", value: `${Math.round(audio.settings.volume * 10)}` },
+      { label: "Go back", value: "" },
+    ];
+    rows.forEach((row, i) => {
+      const y = 30 + i * 16;
+      const selected = i === this.index;
+      if (selected) screen.rect(36, y - 3, SCREEN_W - 72, 13, C.BLUE);
+      screen.text(48, y, row.label, selected ? C.WHITE : C.GREY);
+      if (i === 2) {
+        gauge(168, y - 1, 90, audio.settings.volume, C.BRIGHTGREEN);
+        screen.textRight(SCREEN_W - 48, y, row.value, selected ? C.YELLOW : C.GREY);
+      } else if (row.value) {
+        screen.textRight(SCREEN_W - 48, y, row.value, row.value === "on" ? C.BRIGHTGREEN : C.BROWN);
+      }
+    });
+
+    panel(20, 100, SCREEN_W - 40, 76, { fill: C.BLACK, border: C.DARKGREY, label: "music info" });
+    screen.text(26, 105, "YOUR OWN MUSIC", C.YELLOW);
+    const slots = importedSlots();
+    let y = 117;
+    if (slots.length === 0) {
+      for (const line of wrapText(
+        "Drop a .mid (or .ogg) into public/music named after a slot - title, store, travel, landmark, forage, river, everfree, victory, memorial - and it plays instead of the built-in tune.",
+        45,
+      )) {
+        screen.text(26, y, line, C.GREY);
+        y += CELL_H;
+      }
+    } else {
+      screen.text(26, y, `${slots.length} imported track${slots.length === 1 ? "" : "s"}:`, C.BRIGHTGREEN);
+      y += CELL_H + 2;
+      for (const slot of slots.slice(0, 6)) {
+        screen.text(34, y, `\u0004 ${slot}`, C.WHITE);
+        y += CELL_H;
+      }
+    }
+    footer("arrow keys change a setting  \u0006  ESC to go back");
   }
 }
 
@@ -308,7 +393,7 @@ export class LoadScene implements Scene {
       return;
     }
     session.start(g);
-    audio.stopMusic();
+    setMusic(null);
     scenes.reset(new TravelScene());
   }
 
@@ -388,7 +473,7 @@ export class OriginScene implements Scene {
     });
     screen.text(64, 90, `${info.name.toUpperCase()} OF ${info.home.toUpperCase()}`, C.YELLOW);
     let by = 100;
-    for (const l of wrapText(info.blurb, 40).slice(0, 4)) {
+    for (const l of wrapText(info.blurb, 38).slice(0, 4)) {
       screen.text(64, by, l, C.WHITE);
       by += CELL_H;
     }
@@ -568,10 +653,10 @@ export class DepartureScene implements Scene {
     this.menu.draw({ x: 40, y: 62, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 13, width: 230 });
 
     const opt = MONTH_OPTIONS[this.menu.index]!;
-    panel(16, 132, SCREEN_W - 32, 44, { fill: C.BLUE, border: C.GREY });
+    panel(16, 132, SCREEN_W - 32, 44, { fill: C.BLUE, border: C.GREY, label: "month detail" });
     screen.text(24, 137, `LEAVING IN ${MONTH_NAMES[opt.month - 1]!.toUpperCase()}`, C.YELLOW);
     let dy = 149;
-    for (const l of wrapText(opt.detail, 48)) {
+    for (const l of wrapText(opt.detail, 45)) {
       screen.text(24, dy, l, C.WHITE);
       dy += CELL_H;
     }

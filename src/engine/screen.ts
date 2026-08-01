@@ -163,11 +163,70 @@ export function clearSpriteCache(): void {
 // Screen
 // ---------------------------------------------------------------------------
 
+interface LayoutRegion {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  inset: number;
+  label: string;
+}
+
 class Screen {
   canvas!: HTMLCanvasElement;
   ctx!: CanvasRenderingContext2D;
   /** Set while drawing to constrain output; used by the scrolling minigames. */
   private clipDepth = 0;
+
+  /**
+   * Development aid: when enabled (append ?layout=1 to the URL) every string
+   * drawn is checked against the screen edges and against any panel it sits
+   * inside, and anything that escapes is reported once. This is how the text
+   * overflow bugs get found rather than spotted by eye.
+   */
+  debugLayout = false;
+  private regions: LayoutRegion[] = [];
+  private layoutWarnings = new Set<string>();
+
+  /** Called before each scene draws, so a modal is only checked against its own boxes. */
+  resetRegions(): void {
+    if (this.debugLayout) this.regions.length = 0;
+  }
+
+  /** Registers a box that text drawn inside it must not escape. */
+  noteRegion(x: number, y: number, w: number, h: number, inset: number, label: string): void {
+    if (this.debugLayout) this.regions.push({ x, y, w, h, inset, label });
+  }
+
+  private reportLayout(message: string): void {
+    if (this.layoutWarnings.has(message)) return;
+    this.layoutWarnings.add(message);
+    console.warn(`LAYOUT: ${message}`);
+  }
+
+  private checkText(x: number, y: number, w: number, h: number, str: string): void {
+    if (!this.debugLayout || str.trim() === "") return;
+    const right = x + w;
+    const bottom = y + h;
+    if (x < 1 || y < 0 || right > SCREEN_W - 1 || bottom > SCREEN_H) {
+      this.reportLayout(`"${str}" runs off screen at ${x},${y} (${w}x${h})`);
+      return;
+    }
+    for (const r of this.regions) {
+      const ix = r.x + r.inset;
+      const iy = r.y + r.inset;
+      const ir = r.x + r.w - r.inset;
+      const ib = r.y + r.h - r.inset;
+      const overlaps = right > r.x && x < r.x + r.w && bottom > r.y && y < r.y + r.h;
+      if (!overlaps) continue;
+      const contained = x >= ix && y >= iy && right <= ir && bottom <= ib;
+      if (!contained) {
+        this.reportLayout(
+          `"${str}" escapes ${r.label} box (${r.x},${r.y} ${r.w}x${r.h}) at ${x},${y} (${w}x${h})`,
+        );
+      }
+    }
+  }
 
   attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
@@ -261,6 +320,8 @@ class Screen {
     for (const ch of str) {
       cx += this.char(cx, y, ch, color, scale);
     }
+    // The trailing letter-space is not ink, so exclude it from the extent.
+    this.checkText(x | 0, y | 0, Math.max(0, cx - (x | 0) - scale), GLYPH_H * scale, str);
     return cx - x;
   }
 

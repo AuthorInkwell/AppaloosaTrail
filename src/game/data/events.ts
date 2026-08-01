@@ -222,7 +222,7 @@ export const EVENTS: TrailEvent[] = [
         },
       },
       {
-        label: "Try to thread the wagon through the herd",
+        label: "Thread the wagon through the herd",
         resolve: ({ g, r }) => {
           if (r.chance(0.45)) {
             return { text: "You slip through a gap and gain most of a day on the crossing.", sfx: "select" };
@@ -548,7 +548,7 @@ export const EVENTS: TrailEvent[] = [
         },
       },
       {
-        label: "Build the fire high and sleep in the wagon",
+        label: "Build the fire high and sleep in",
         resolve: ({ g, r }) => {
           if (r.chance(0.6)) {
             return { text: "The fire keeps them off. By dawn there is nothing but scattered bark." };
@@ -566,7 +566,7 @@ export const EVENTS: TrailEvent[] = [
         },
       },
       {
-        label: "Have the team form a ring around the wagon",
+        label: "Have the team ring the wagon",
         available: ({ g }) => g.team >= 3,
         resolve: ({ g, r }) => {
           if (r.chance(0.75 + g.teamMood / 500)) {
@@ -589,7 +589,7 @@ export const EVENTS: TrailEvent[] = [
     when: ({ terrain, g }) => terrain === "swamp" || g.weather === "rain" || g.weather === "storm",
     choices: [
       {
-        label: "Unload the wagon and carry everything clear",
+        label: "Unload and carry everything clear",
         resolve: ({ g, r }) => {
           damageParty(g, 4);
           const lost = takeFood(g, r.int(0, 5));
@@ -757,7 +757,7 @@ export const EVENTS: TrailEvent[] = [
         },
       },
       {
-        label: "Trade 25 baskets of food for a spare wheel",
+        label: "Trade 25 baskets for a spare wheel",
         available: ({ g }) => g.food >= 25,
         resolve: ({ g }) => {
           takeFood(g, 25);
@@ -870,7 +870,7 @@ export const EVENTS: TrailEvent[] = [
     once: true,
     choices: [
       {
-        label: "Take a day to reunite her with her family",
+        label: "Take a day to find her family",
         resolve: ({ g, r }) => {
           const reward = r.int(40, 90);
           addBits(g, reward);
@@ -979,7 +979,7 @@ export const EVENTS: TrailEvent[] = [
     when: ({ g }) => g.team > 0 && g.teamMood < 45,
     choices: [
       {
-        label: "Call a half-day halt and feed them properly",
+        label: "Halt for half a day and feed them",
         available: ({ g }) => g.food >= 12,
         resolve: ({ g }) => {
           takeFood(g, 12);
