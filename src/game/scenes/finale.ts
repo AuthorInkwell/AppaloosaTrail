@@ -12,7 +12,6 @@ import { TIMBERWOLF } from "../../art/sprites";
 import { drawBush, drawPine, drawRock, hash01 } from "../../art/scenery";
 import { drawVista } from "../../art/vistas";
 import { drawPony, drawRig } from "../../art/wagon";
-import { EVERFREE_THEME, VICTORY_THEME } from "../data/music";
 import { EVERFREE_SHORTCUT_MILES, Landmark, TOLL_ROAD_COST, TOTAL_MILES } from "../data/trail";
 import { session } from "../session";
 import { GameState, ORIGINS, formatDate, healthLabel, livingPonies, log, partyHealth, spend } from "../state";
@@ -21,6 +20,7 @@ import { passDays } from "../systems/travel";
 import { ScoreReport, scoreRun, submitScore } from "../systems/score";
 import { HofEntry } from "../systems/score";
 import { showPages } from "./common";
+import { setMusic } from "../systems/music";
 import { returnToTitle } from "./eventrunner";
 import { SizeUpScene } from "./menus";
 
@@ -214,7 +214,7 @@ export class EverfreeScene implements Scene {
   ) {}
 
   enter(): void {
-    audio.playSong(EVERFREE_THEME);
+    setMusic("everfree");
     showPages(
       [
         {
@@ -234,7 +234,7 @@ export class EverfreeScene implements Scene {
   }
 
   exit(): void {
-    audio.stopMusic();
+    setMusic(null);
   }
 
   private laneY(lane: number): number {
@@ -484,7 +484,7 @@ export class ArrivalScene implements Scene {
     g.outcome = "arrived";
     g.score = this.report.total;
     log(g, "Arrived in Appaloosa!");
-    audio.playSong(VICTORY_THEME);
+    setMusic("victory");
     const survivors = livingPonies(g);
     showPages([
       {
@@ -501,7 +501,7 @@ export class ArrivalScene implements Scene {
   }
 
   exit(): void {
-    audio.stopMusic();
+    setMusic(null);
   }
 
   update(dt: number): void {

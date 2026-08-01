@@ -76,6 +76,13 @@ for (let i = 0; i < 3; i++) {
 await press("Digit4");
 await settle();
 await press("Space");
+await press("Digit5"); // sound and music
+await settle();
+for (let i = 0; i < 4; i++) {
+  await press("ArrowDown");
+  await settle(3);
+}
+await press("Escape");
 await press("Digit2"); // load menu (empty)
 await settle();
 await press("Escape");

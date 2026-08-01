@@ -13,6 +13,7 @@ import { TitleScene } from "./game/scenes/setup";
 import { session } from "./game/session";
 import { EVENTS } from "./game/data/events";
 import { TRAIL } from "./game/data/trail";
+import { loadImportedMusic } from "./game/systems/music";
 
 const canvas = document.getElementById("screen") as HTMLCanvasElement | null;
 if (!canvas) throw new Error("canvas #screen missing");
@@ -21,6 +22,11 @@ screen.attach(canvas);
 screen.debugLayout = new URLSearchParams(location.search).has("layout");
 input.attach();
 input.onFirstGesture(() => audio.init());
+
+// Imported tracks arrive asynchronously; the built-ins cover the gap.
+void loadImportedMusic().then((loaded) => {
+  if (loaded.length) console.info(`music: imported ${loaded.join(", ")}`);
+});
 
 setTitleFactory(() => new TitleScene());
 setArrivalDispatcher((g, landmark, next) => {
@@ -53,6 +59,8 @@ scenes.push(new TitleScene());
   return {
     scene: scenes.top?.name ?? null,
     depth: scenes.depth,
+    music: audio.nowPlaying,
+    peak: Number(audio.peakLevel().toFixed(3)),
     game: g
       ? {
           day: g.day,
@@ -79,6 +87,7 @@ if (import.meta.env.DEV) {
     __appaloosaShowLandmark: (id: string) => boolean;
     __appaloosaHurtParty: (health: number, criticalDays: number) => void;
   };
+  (window as unknown as { __appaloosaAudio: typeof audio }).__appaloosaAudio = audio;
   hooks.__appaloosaHurtParty = (health, criticalDays) => {
     const g = session.game;
     if (!g) return;

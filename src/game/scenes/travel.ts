@@ -30,6 +30,7 @@ import { session } from "../session";
 import { PACE_INFO, Weather, livingPonies } from "../state";
 import { advanceDay } from "../systems/travel";
 import { drawStatusPanel } from "./common";
+import { currentMusicSlot, setMusic } from "../systems/music";
 import { runDayResult } from "./eventrunner";
 import { SizeUpScene } from "./menus";
 
@@ -186,7 +187,7 @@ export class TravelScene implements Scene {
   private busy = false;
 
   enter(): void {
-    audio.stopMusic();
+    setMusic("travel");
     const g = session.game;
     if (g) this.scroll = g.miles * 6;
   }
@@ -206,6 +207,8 @@ export class TravelScene implements Scene {
     const g = session.current;
     this.frame += dt * 60;
     this.scroll += dt * 26 * PACE_INFO[g.pace].speed * (g.team > 0 ? 1 : 0.5);
+    // Reclaim the music after a landmark, store or minigame hands control back.
+    if (currentMusicSlot() !== "travel") setMusic("travel");
 
     if (input.confirm() || input.pressed("Enter")) {
       audio.sfx("select");

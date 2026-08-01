@@ -1,8 +1,11 @@
 /**
- * Tiny chiptune engine: square/triangle/noise voices driven by step patterns,
- * plus a handful of one-shot sound effects. Deliberately lo-fi, per the design
- * doc's "very simplistic chiptune music".
+ * Chiptune engine: square/triangle/noise voices driven either by the built-in
+ * step patterns or by an imported MIDI file, plus one-shot sound effects and
+ * straight playback of audio files for anyone who would rather supply a
+ * finished recording.
  */
+
+import { MidiSong } from "./midi";
 
 export type Wave = "square" | "triangle" | "sawtooth" | "sine" | "noise";
 
@@ -23,6 +26,15 @@ export interface Song {
   loop: boolean;
   channels: Channel[];
 }
+
+export interface AudioSettings {
+  music: boolean;
+  effects: boolean;
+  /** 0..1 master level. */
+  volume: number;
+}
+
+const SETTINGS_KEY = "appaloosa.audio.v1";
 
 const NOTE_OFFSETS: Record<string, number> = {
   C: 0,
@@ -54,13 +66,33 @@ export function noteFreq(note: string): number | null {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
+/** Rough General MIDI percussion map onto noise-band centre frequencies. */
+function drumFreq(pitch: number): number {
+  if (pitch <= 36) return 90; // kick
+  if (pitch === 37 || pitch === 39) return 2200; // rim, clap
+  if (pitch === 38 || pitch === 40) return 1500; // snare
+  if (pitch >= 41 && pitch <= 47) return 260 + (pitch - 41) * 60; // toms
+  if (pitch === 42 || pitch === 44) return 7000; // closed hat
+  if (pitch === 46) return 5200; // open hat
+  if (pitch >= 49) return 4200; // cymbals
+  return 1200;
+}
+
 interface ScheduledNote {
-  freq: number | null; // null = noise hit
+  freq: number | null;
   start: number;
   dur: number;
   gain: number;
   wave: Wave;
   detune: number;
+}
+
+interface MidiPlayback {
+  song: MidiSong;
+  startTime: number;
+  index: number;
+  loop: boolean;
+  gain: number;
 }
 
 class AudioEngine {
@@ -69,11 +101,43 @@ class AudioEngine {
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private noiseBuffer: AudioBuffer | null = null;
-  private currentSong: Song | null = null;
+  private currentName: string | null = null;
   private loopTimer: number | null = null;
+  private midiTimer: number | null = null;
+  private midi: MidiPlayback | null = null;
+  private sampleSource: AudioBufferSourceNode | null = null;
+  private analyser: AnalyserNode | null = null;
   private generation = 0;
   private liveNodes: AudioScheduledSourceNode[] = [];
-  muted = false;
+
+  settings: AudioSettings = { music: true, effects: true, volume: 0.6 };
+
+  constructor() {
+    this.loadSettings();
+  }
+
+  private loadSettings(): void {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<AudioSettings>;
+      this.settings = {
+        music: parsed.music ?? true,
+        effects: parsed.effects ?? true,
+        volume: Math.min(1, Math.max(0, parsed.volume ?? 0.6)),
+      };
+    } catch {
+      /* defaults are fine */
+    }
+  }
+
+  private saveSettings(): void {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+    } catch {
+      /* storage unavailable */
+    }
+  }
 
   /** Must be called from inside a user gesture. */
   init(): void {
@@ -83,14 +147,15 @@ class AudioEngine {
     if (!Ctor) return;
     this.ctx = new Ctor();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.5;
     this.master.connect(this.ctx.destination);
     this.musicGain = this.ctx.createGain();
-    this.musicGain.gain.value = 0.5;
     this.musicGain.connect(this.master);
     this.sfxGain = this.ctx.createGain();
-    this.sfxGain.gain.value = 0.75;
     this.sfxGain.connect(this.master);
+    this.analyser = this.ctx.createAnalyser();
+    this.analyser.fftSize = 256;
+    this.master.connect(this.analyser);
+    this.applySettings();
 
     const len = Math.floor(this.ctx.sampleRate * 0.5);
     const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -99,12 +164,70 @@ class AudioEngine {
     this.noiseBuffer = buf;
   }
 
-  toggleMute(): boolean {
-    this.muted = !this.muted;
-    if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
-    return this.muted;
+  get context(): AudioContext | null {
+    return this.ctx;
   }
 
+  private applySettings(): void {
+    if (this.master) this.master.gain.value = this.settings.volume;
+    if (this.musicGain) this.musicGain.gain.value = this.settings.music ? 0.5 : 0;
+    if (this.sfxGain) this.sfxGain.gain.value = this.settings.effects ? 0.75 : 0;
+  }
+
+  /** Set by the music module so switching music back on resumes the current slot. */
+  onMusicResume: (() => void) | null = null;
+
+  setMusicEnabled(on: boolean): void {
+    this.settings.music = on;
+    this.applySettings();
+    this.saveSettings();
+    if (on) this.onMusicResume?.();
+    else this.stopMusic();
+  }
+
+  setEffectsEnabled(on: boolean): void {
+    this.settings.effects = on;
+    this.applySettings();
+    this.saveSettings();
+  }
+
+  setVolume(v: number): void {
+    this.settings.volume = Math.min(1, Math.max(0, v));
+    this.applySettings();
+    this.saveSettings();
+  }
+
+  get muted(): boolean {
+    return !this.settings.music && !this.settings.effects;
+  }
+
+  /** The M key and the title menu: everything on, or everything off. */
+  toggleMute(): boolean {
+    const nowMuted = !this.muted;
+    this.settings.music = !nowMuted;
+    this.settings.effects = !nowMuted;
+    this.applySettings();
+    this.saveSettings();
+    if (nowMuted) this.stopMusic();
+    else this.onMusicResume?.();
+    return nowMuted;
+  }
+
+  get nowPlaying(): string | null {
+    return this.currentName;
+  }
+
+  /** Current output peak, 0..1. Used by the audio smoke test. */
+  peakLevel(): number {
+    if (!this.analyser) return 0;
+    const buf = new Uint8Array(this.analyser.fftSize);
+    this.analyser.getByteTimeDomainData(buf);
+    let peak = 0;
+    for (const v of buf) peak = Math.max(peak, Math.abs(v - 128) / 128);
+    return peak;
+  }
+
+  // -------------------------------------------------------------- voices
   private voice(n: ScheduledNote, dest: GainNode): void {
     const ctx = this.ctx;
     if (!ctx) return;
@@ -152,17 +275,15 @@ class AudioEngine {
     };
   }
 
+  // ------------------------------------------------------- tracker songs
   playSong(song: Song): void {
-    if (this.currentSong?.name === song.name) return;
+    if (this.currentName === song.name) return;
     this.init();
     this.stopMusic();
-    if (!this.ctx || !this.musicGain) {
-      this.currentSong = song;
-      return;
-    }
-    this.currentSong = song;
-    const gen = ++this.generation;
-    this.scheduleSong(song, gen);
+    if (!this.settings.music) return;
+    this.currentName = song.name;
+    if (!this.ctx || !this.musicGain) return;
+    this.scheduleSong(song, ++this.generation);
   }
 
   private scheduleSong(song: Song, gen: number): void {
@@ -216,12 +337,118 @@ class AudioEngine {
     }
   }
 
+  // ---------------------------------------------------------- MIDI songs
+  /** Plays a parsed MIDI file through the chip voices. */
+  playMidi(song: MidiSong, opts: { loop?: boolean; gain?: number } = {}): void {
+    if (this.currentName === song.name) return;
+    this.init();
+    this.stopMusic();
+    if (!this.settings.music) return;
+    this.currentName = song.name;
+    const ctx = this.ctx;
+    if (!ctx || !this.musicGain) return;
+    this.midi = {
+      song,
+      startTime: ctx.currentTime + 0.2,
+      index: 0,
+      loop: opts.loop ?? true,
+      gain: opts.gain ?? 1,
+    };
+    this.generation++;
+    this.pumpMidi();
+    this.midiTimer = window.setInterval(() => this.pumpMidi(), 60);
+  }
+
+  /** Schedules the next slice of an in-progress MIDI song. */
+  private pumpMidi(): void {
+    const m = this.midi;
+    const ctx = this.ctx;
+    const dest = this.musicGain;
+    if (!m || !ctx || !dest) return;
+    if (ctx.state === "suspended") void ctx.resume();
+    const horizon = ctx.currentTime + 0.4;
+
+    while (m.index < m.song.notes.length) {
+      const n = m.song.notes[m.index]!;
+      const when = m.startTime + n.time;
+      if (when > horizon) break;
+      const isDrum = n.wave === "noise";
+      this.voice(
+        {
+          freq: isDrum ? drumFreq(n.pitch) : n.freq,
+          start: Math.max(when, ctx.currentTime + 0.005),
+          dur: isDrum ? Math.min(0.16, Math.max(0.05, n.duration)) : n.duration * 0.94,
+          gain: (isDrum ? 0.1 : 0.15) * (0.35 + n.velocity * 0.65) * m.gain,
+          wave: n.wave,
+          detune: n.wave === "square" ? (n.channel % 2 === 0 ? 0 : 4) : 0,
+        },
+        dest,
+      );
+      m.index++;
+    }
+
+    if (m.index >= m.song.notes.length && ctx.currentTime >= m.startTime + m.song.duration - 0.45) {
+      if (m.loop) {
+        m.startTime += m.song.duration;
+        m.index = 0;
+      } else {
+        this.stopMusic();
+      }
+    }
+  }
+
+  // -------------------------------------------------------- audio files
+  /** Plays a decoded audio file (ogg/mp3/wav) as the music track. */
+  playSample(buffer: AudioBuffer, name: string, opts: { loop?: boolean; gain?: number } = {}): void {
+    if (this.currentName === name) return;
+    this.init();
+    this.stopMusic();
+    if (!this.settings.music) return;
+    this.currentName = name;
+    const ctx = this.ctx;
+    if (!ctx || !this.musicGain) return;
+    if (ctx.state === "suspended") void ctx.resume();
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.loop = opts.loop ?? true;
+    const gain = ctx.createGain();
+    gain.gain.value = opts.gain ?? 0.9;
+    src.connect(gain);
+    gain.connect(this.musicGain);
+    src.start();
+    this.sampleSource = src;
+  }
+
+  async decode(data: ArrayBuffer): Promise<AudioBuffer | null> {
+    this.init();
+    if (!this.ctx) return null;
+    try {
+      return await this.ctx.decodeAudioData(data.slice(0));
+    } catch {
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------- stop
   stopMusic(): void {
     this.generation++;
-    this.currentSong = null;
+    this.currentName = null;
     if (this.loopTimer !== null) {
       clearTimeout(this.loopTimer);
       this.loopTimer = null;
+    }
+    if (this.midiTimer !== null) {
+      clearInterval(this.midiTimer);
+      this.midiTimer = null;
+    }
+    this.midi = null;
+    if (this.sampleSource) {
+      try {
+        this.sampleSource.stop();
+      } catch {
+        /* not started */
+      }
+      this.sampleSource = null;
     }
     for (const n of this.liveNodes.slice()) {
       try {
@@ -233,11 +460,12 @@ class AudioEngine {
     this.liveNodes = [];
   }
 
+  // ----------------------------------------------------------------- sfx
   private blip(freq: number, dur: number, wave: Wave, gain = 0.3, slideTo?: number): void {
     this.init();
     const ctx = this.ctx;
     const dest = this.sfxGain;
-    if (!ctx || !dest) return;
+    if (!ctx || !dest || !this.settings.effects) return;
     if (ctx.state === "suspended") void ctx.resume();
     const start = ctx.currentTime + 0.001;
     const env = ctx.createGain();
@@ -273,7 +501,7 @@ class AudioEngine {
     this.init();
     const ctx = this.ctx;
     const dest = this.sfxGain;
-    if (!ctx || !dest) return;
+    if (!ctx || !dest || !this.settings.effects) return;
     if (ctx.state === "suspended") void ctx.resume();
     const base = ctx.currentTime + 0.001;
     freqs.forEach((f, i) => {
@@ -282,6 +510,7 @@ class AudioEngine {
   }
 
   sfx(name: SfxName): void {
+    if (!this.settings.effects) return;
     switch (name) {
       case "move":
         this.blip(560, 0.035, "square", 0.13);
