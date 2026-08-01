@@ -306,7 +306,7 @@ await press("Space");
 await until("travel", "Space", 10);
 // Ponies get a rally roll each day, so keep pressing until the party is gone.
 let sawMemorial = false;
-for (let round = 0; round < 24; round++) {
+for (let round = 0; round < 48; round++) {
   const s = await state();
   if (s.scene === "gameover") break;
   if (s.scene === "memorial") {
