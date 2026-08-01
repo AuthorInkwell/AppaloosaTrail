@@ -3,6 +3,8 @@
  * scene so modal popups (random events, confirmations) can sit over the map.
  */
 
+import { screen } from "./screen";
+
 export interface Scene {
   readonly name: string;
   /** When true, the scene below is drawn first. */
@@ -65,7 +67,10 @@ class SceneStack {
   draw(): void {
     let start = this.stack.length - 1;
     while (start > 0 && this.stack[start]?.transparent) start--;
-    for (let i = start; i < this.stack.length; i++) this.stack[i]!.draw();
+    for (let i = start; i < this.stack.length; i++) {
+      screen.resetRegions();
+      this.stack[i]!.draw();
+    }
   }
 }
 

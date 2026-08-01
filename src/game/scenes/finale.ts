@@ -414,7 +414,9 @@ export class EverfreeScene implements Scene {
     for (const h of this.hazards) {
       const y = this.laneY(h.lane);
       if (h.hit) {
-        if (Math.floor(this.frame / 3) % 2 === 0) screen.text(h.x, y - 16, "!", C.YELLOW);
+        if (h.x > 2 && h.x < SCREEN_W - 8 && Math.floor(this.frame / 3) % 2 === 0) {
+          screen.text(h.x, y - 16, "!", C.YELLOW);
+        }
         continue;
       }
       switch (h.kind) {

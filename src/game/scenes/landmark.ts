@@ -148,9 +148,9 @@ export class LandmarkScene implements Scene {
     });
     screen.hline(0, 104, SCREEN_W, C.GREY);
 
-    panel(6, 108, 178, 74, { fill: C.BLACK, border: C.DARKGREY });
-    screen.text(12, 112, "You may:", C.CYAN);
-    this.menu.draw({ x: 18, y: 124, color: C.GREY, cursorColor: C.WHITE, lineHeight: 9 });
+    panel(6, 108, 178, 74, { fill: C.BLACK, border: C.DARKGREY, label: "landmark menu" });
+    screen.text(12, 111, "You may:", C.CYAN);
+    this.menu.draw({ x: 18, y: 122, color: C.GREY, cursorColor: C.WHITE, lineHeight: 8, maxLabel: 25 });
 
     panel(188, 108, SCREEN_W - 194, 74, { fill: C.BLACK, border: C.DARKGREY });
     screen.text(194, 112, formatDate(g.date), C.YELLOW);

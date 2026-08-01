@@ -111,7 +111,7 @@ export class TitleScene implements Scene {
     screen.textCentered(SCREEN_W / 2, 108, "You may:", C.CYAN);
     this.menu.draw({ x: 48, y: 120, cursorColor: C.WHITE, color: C.GREY, lineHeight: 9 });
 
-    screen.textCentered(SCREEN_W / 2, SCREEN_H - 16, "A fan tribute. My Little Pony is the property of Hasbro.", C.DARKGREY);
+    screen.textCentered(SCREEN_W / 2, SCREEN_H - 16, "A fan tribute. My Little Pony is property of Hasbro.", C.DARKGREY);
     if (blink(1100, 0.5)) {
       screen.textCentered(SCREEN_W / 2, SCREEN_H - 8, "press a number, or arrow keys and RETURN", C.BROWN);
     }
@@ -388,7 +388,7 @@ export class OriginScene implements Scene {
     });
     screen.text(64, 90, `${info.name.toUpperCase()} OF ${info.home.toUpperCase()}`, C.YELLOW);
     let by = 100;
-    for (const l of wrapText(info.blurb, 40).slice(0, 4)) {
+    for (const l of wrapText(info.blurb, 38).slice(0, 4)) {
       screen.text(64, by, l, C.WHITE);
       by += CELL_H;
     }
@@ -568,10 +568,10 @@ export class DepartureScene implements Scene {
     this.menu.draw({ x: 40, y: 62, color: C.GREY, cursorColor: C.YELLOW, lineHeight: 13, width: 230 });
 
     const opt = MONTH_OPTIONS[this.menu.index]!;
-    panel(16, 132, SCREEN_W - 32, 44, { fill: C.BLUE, border: C.GREY });
+    panel(16, 132, SCREEN_W - 32, 44, { fill: C.BLUE, border: C.GREY, label: "month detail" });
     screen.text(24, 137, `LEAVING IN ${MONTH_NAMES[opt.month - 1]!.toUpperCase()}`, C.YELLOW);
     let dy = 149;
-    for (const l of wrapText(opt.detail, 48)) {
+    for (const l of wrapText(opt.detail, 45)) {
       screen.text(24, dy, l, C.WHITE);
       dy += CELL_H;
     }

@@ -8,14 +8,17 @@ import { wrapText } from "./engine/ui";
 import { LandmarkScene } from "./game/scenes/landmark";
 import { RiverScene } from "./game/scenes/river";
 import { ArrivalScene, ForkScene } from "./game/scenes/finale";
-import { setArrivalDispatcher, setTitleFactory } from "./game/scenes/eventrunner";
+import { runEvent, setArrivalDispatcher, setTitleFactory } from "./game/scenes/eventrunner";
 import { TitleScene } from "./game/scenes/setup";
 import { session } from "./game/session";
+import { EVENTS } from "./game/data/events";
+import { TRAIL } from "./game/data/trail";
 
 const canvas = document.getElementById("screen") as HTMLCanvasElement | null;
 if (!canvas) throw new Error("canvas #screen missing");
 
 screen.attach(canvas);
+screen.debugLayout = new URLSearchParams(location.search).has("layout");
 input.attach();
 input.onFirstGesture(() => audio.init());
 
@@ -67,9 +70,50 @@ scenes.push(new TitleScene());
 };
 
 if (import.meta.env.DEV) {
-  // Dev-only shortcut so the smoke test can reach the late trail quickly.
-  (window as unknown as { __appaloosaCheat: (patch: Record<string, unknown>) => void }).__appaloosaCheat = (patch) => {
+  // Dev-only shortcuts so the smoke test and the layout audit can reach any
+  // screen without playing the whole trail to get there.
+  const hooks = window as unknown as {
+    __appaloosaCheat: (patch: Record<string, unknown>) => void;
+    __appaloosaEventIds: () => string[];
+    __appaloosaShowEvent: (id: string) => boolean;
+    __appaloosaShowLandmark: (id: string) => boolean;
+    __appaloosaHurtParty: (health: number, criticalDays: number) => void;
+  };
+  hooks.__appaloosaHurtParty = (health, criticalDays) => {
+    const g = session.game;
+    if (!g) return;
+    for (const p of g.ponies) {
+      if (!p.alive) continue;
+      p.health = health;
+      p.criticalDays = criticalDays;
+    }
+    // Starve them too, or the daily recovery lifts them straight back out.
+    g.potions = 0;
+    g.food = 0;
+    g.rations = "bare";
+    g.pace = "grueling";
+  };
+  hooks.__appaloosaCheat = (patch) => {
     if (session.game) Object.assign(session.game, patch);
+  };
+  hooks.__appaloosaEventIds = () => EVENTS.map((e) => e.id);
+  hooks.__appaloosaShowEvent = (id) => {
+    const event = EVENTS.find((e) => e.id === id);
+    if (!event || !session.game) return false;
+    runEvent(session.game, event, () => undefined);
+    return true;
+  };
+  hooks.__appaloosaShowLandmark = (id) => {
+    const landmark = TRAIL.find((l) => l.id === id);
+    if (!landmark || !session.game) return false;
+    session.game.miles = landmark.mile;
+    session.game.flags[`arrived:${landmark.id}`] = true;
+    const done = () => undefined;
+    if (landmark.kind === "river") scenes.push(new RiverScene(session.game, landmark, done));
+    else if (landmark.kind === "fork") scenes.push(new ForkScene(session.game, landmark, done));
+    else if (landmark.kind === "end") scenes.push(new ArrivalScene(session.game, landmark));
+    else scenes.push(new LandmarkScene(session.game, landmark, { onDone: done }));
+    return true;
   };
 }
 
