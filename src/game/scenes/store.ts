@@ -7,7 +7,7 @@
 import { audio } from "../../engine/audio";
 import { input } from "../../engine/input";
 import { Scene, scenes } from "../../engine/scene";
-import { C, CELL_H, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
+import { C, CELL_H, SCREEN_W, screen } from "../../engine/screen";
 import { Menu, blink, footer, panel, screenFrame, wrapText } from "../../engine/ui";
 import { BASKET, CLOAK, COIN, POTION, WHEEL_ICON } from "../../art/sprites";
 import { TEAM_MEMBER } from "../../art/sprites";
@@ -25,6 +25,16 @@ const ICONS: Partial<Record<string, typeof BASKET>> = {
   tongues: WHEEL_ICON,
   potions: POTION,
 };
+
+/**
+ * Fixed vertical anchors, laid out from the bottom of the screen upwards, so
+ * the hint line can never end up on top of the status strip.
+ */
+const ROW_H = 12;
+const HINT_Y = 191;
+const STRIP_Y = 179;
+const TOTALS_Y = 166;
+const DESC_Y = 132;
 
 export interface StoreOpts {
   intro?: boolean;
@@ -210,14 +220,16 @@ export class StoreScene implements Scene {
       (this.priceMult > 1.4
         ? "Everything out here comes in by wagon, friend, and the wagons are not cheap."
         : "Take your time. Everything you need for the trail is on the board.");
+    // The greeting gets two lines whether or not it uses them, so everything
+    // below sits at the same height regardless of how chatty the shopkeeper is.
     let gy = 15;
-    for (const line of wrapText(greeting, 50)) {
+    for (const line of wrapText(greeting, 50).slice(0, 2)) {
       screen.text(12, gy, line, C.BRIGHTCYAN);
       gy += CELL_H;
     }
 
     // Table header
-    const top = gy + 3;
+    const top = 34;
     screen.rect(8, top, SCREEN_W - 16, 9, C.BLUE);
     screen.text(12, top + 1, "ITEM", C.YELLOW);
     screen.textRight(184, top + 1, "PRICE", C.YELLOW);
@@ -226,7 +238,7 @@ export class StoreScene implements Scene {
     screen.textRight(SCREEN_W - 12, top + 1, "COST", C.YELLOW);
 
     STORE_ITEMS.forEach((item, i) => {
-      const y = top + 12 + i * 13;
+      const y = top + 12 + i * ROW_H;
       const selected = i === this.index;
       if (selected) screen.rect(8, y - 2, SCREEN_W - 16, 12, C.BLUE);
       const ink = selected ? C.WHITE : C.GREY;
@@ -253,9 +265,8 @@ export class StoreScene implements Scene {
 
     // Selected item description
     const item = STORE_ITEMS[this.index]!;
-    const descY = top + 12 + STORE_ITEMS.length * 13 + 2;
-    panel(8, descY, SCREEN_W - 16, 30, { fill: C.BLACK, border: C.DARKGREY });
-    let dy = descY + 4;
+    panel(8, DESC_Y, SCREEN_W - 16, 32, { fill: C.BLACK, border: C.DARKGREY, label: "item description" });
+    let dy = DESC_Y + 4;
     for (const line of wrapText(item.desc, 50).slice(0, 2)) {
       screen.text(12, dy, line, C.BRIGHTGREEN);
       dy += CELL_H;
@@ -263,26 +274,25 @@ export class StoreScene implements Scene {
     if (item.id === "team") {
       const hint =
         g.team > 0 ? `at most ${MAX_TEAM}; dismiss for ${TEAM_DISMISS_REFUND} bits each` : `at most ${MAX_TEAM} in the team`;
-      screen.text(12, descY + 20, hint, C.BROWN);
+      screen.text(12, DESC_Y + 21, hint, C.BROWN);
     }
 
     // Totals
-    const totY = descY + 32;
     const total = this.total();
-    screen.rect(8, totY, SCREEN_W - 16, 11, total > g.bits ? C.RED : C.GREEN);
-    screen.frame(8, totY, SCREEN_W - 16, 11, C.GREY);
-    screen.text(12, totY + 2, `TOTAL ${total}`, C.WHITE);
-    screen.sprite(COIN, 118, totY + 1);
-    screen.text(130, totY + 2, `purse ${Math.round(g.bits)}`, C.WHITE);
-    screen.textRight(SCREEN_W - 12, totY + 2, `left over ${Math.round(g.bits - total)}`, C.WHITE);
+    screen.rect(8, TOTALS_Y, SCREEN_W - 16, 11, total > g.bits ? C.RED : C.GREEN);
+    screen.frame(8, TOTALS_Y, SCREEN_W - 16, 11, C.GREY);
+    screen.text(12, TOTALS_Y + 2, `TOTAL ${total}`, C.WHITE);
+    screen.sprite(COIN, 118, TOTALS_Y + 1);
+    screen.text(130, TOTALS_Y + 2, `purse ${Math.round(g.bits)}`, C.WHITE);
+    screen.textRight(SCREEN_W - 12, TOTALS_Y + 2, `left over ${Math.round(g.bits - total)}`, C.WHITE);
 
-    drawSupplyStrip(g, 8, totY + 13, SCREEN_W - 16);
+    drawSupplyStrip(g, 8, STRIP_Y, SCREEN_W - 16);
 
     if (blink(900, 0.7)) {
       screen.textCentered(
         SCREEN_W / 2,
-        SCREEN_H - 10,
-        total !== 0 ? "RETURN to buy   \u0003\u0004 change amount   SPACE to leave" : "\u0003\u0004 change amount   SPACE BAR to leave the store",
+        HINT_Y,
+        total !== 0 ? "RETURN to buy  \u0003\u0004 change amount  SPACE to leave" : "\u0003\u0004 change amount   SPACE BAR to leave the store",
         C.YELLOW,
       );
     }

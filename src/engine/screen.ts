@@ -186,11 +186,38 @@ class Screen {
    */
   debugLayout = false;
   private regions: LayoutRegion[] = [];
+  private drawnText: { x: number; y: number; w: number; h: number; str: string }[] = [];
+  private overlapExempt = 0;
   private layoutWarnings = new Set<string>();
 
+  private currentScene = "";
+
   /** Called before each scene draws, so a modal is only checked against its own boxes. */
-  resetRegions(): void {
-    if (this.debugLayout) this.regions.length = 0;
+  resetRegions(sceneName = ""): void {
+    if (!this.debugLayout) return;
+    this.regions.length = 0;
+    this.drawnText.length = 0;
+    this.currentScene = sceneName;
+  }
+
+  /**
+   * Runs `fn` with overlap reporting suppressed, for the handful of places
+   * that deliberately draw text on top of text: drop shadows and the
+   * placeholder underscores behind a text field.
+   */
+  withOverlap<T>(fn: () => T): T {
+    this.overlapExempt++;
+    try {
+      return fn();
+    } finally {
+      this.overlapExempt--;
+    }
+  }
+
+  /** Reported by the truncate() helper in ui.ts when a string had to be cut. */
+  reportTruncation(full: string, shown: string, where: string): void {
+    if (!this.debugLayout) return;
+    this.reportLayout(`"${full}" was truncated to "${shown}" (${where})`);
   }
 
   /** Registers a box that text drawn inside it must not escape. */
@@ -199,9 +226,10 @@ class Screen {
   }
 
   private reportLayout(message: string): void {
-    if (this.layoutWarnings.has(message)) return;
-    this.layoutWarnings.add(message);
-    console.warn(`LAYOUT: ${message}`);
+    const full = this.currentScene ? `[${this.currentScene}] ${message}` : message;
+    if (this.layoutWarnings.has(full)) return;
+    this.layoutWarnings.add(full);
+    console.warn(`LAYOUT: ${full}`);
   }
 
   private checkText(x: number, y: number, w: number, h: number, str: string): void {
@@ -211,6 +239,19 @@ class Screen {
     if (x < 1 || y < 0 || right > SCREEN_W - 1 || bottom > SCREEN_H) {
       this.reportLayout(`"${str}" runs off screen at ${x},${y} (${w}x${h})`);
       return;
+    }
+    // Text drawn on top of other text. Glyphs are 7 rows tall in an 8 row cell,
+    // so rows only collide when they genuinely share ink.
+    if (this.overlapExempt === 0) {
+      for (const t of this.drawnText) {
+        const horizontal = right > t.x && x < t.x + t.w;
+        const vertical = y + h - 1 > t.y && y < t.y + t.h - 1;
+        if (horizontal && vertical) {
+          this.reportLayout(`"${str}" at ${x},${y} overlaps "${t.str}" at ${t.x},${t.y}`);
+          break;
+        }
+      }
+      this.drawnText.push({ x, y, w, h, str });
     }
     for (const r of this.regions) {
       const ix = r.x + r.inset;
@@ -335,8 +376,10 @@ class Screen {
 
   /** Text with a 1px drop shadow; used for headings over busy artwork. */
   textShadow(x: number, y: number, str: string, color: Color, shadow: Color = C.BLACK, scale = 1): void {
-    this.text(x + scale, y + scale, str, shadow, scale);
-    this.text(x, y, str, color, scale);
+    this.withOverlap(() => {
+      this.text(x + scale, y + scale, str, shadow, scale);
+      this.text(x, y, str, color, scale);
+    });
   }
 
   textCenteredShadow(cx: number, y: number, str: string, color: Color, shadow: Color = C.BLACK, scale = 1): void {
