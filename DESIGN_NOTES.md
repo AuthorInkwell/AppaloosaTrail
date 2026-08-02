@@ -121,6 +121,33 @@ both endings, entering maximum-length pony names along the way. It should always
 When adding a screen, call `panel(...)` for boxes (it registers itself with the checker), keep menu
 labels inside the `maxLabel` you pass, and re-run the audit.
 
+## Handing it to somebody who does not code
+
+`npm run package` builds `release/AppaloosaTrail.zip`, about 70 kB, holding the game, a `.bat`
+launcher, a plain-English README and an empty `music` folder. The constraint was that the recipient
+should not have to install anything or read anything, so:
+
+- The server is **PowerShell using a raw `TcpListener`**, not `HttpListener`. `HttpListener` needs an
+  HTTP.SYS namespace reservation, which means administrator rights or a `netsh` incantation;
+  `TcpListener` on loopback needs neither. Windows PowerShell 5.1 is on every Windows machine, so
+  there is nothing to install. It is written to 5.1 syntax deliberately — no `??`, no ternaries, no
+  `::new()` — even though it is developed and tested against PowerShell 7.
+- It **binds to 127.0.0.1 only**, which also means Windows Firewall never prompts.
+- The `.bat` calls PowerShell with `-ExecutionPolicy Bypass` for that one command, which also gets
+  past the mark-of-the-web flag on a downloaded file without changing any machine setting.
+- The browser is launched **in app mode with its own profile directory**, so there is no address bar,
+  the window is always a fresh process we can watch, and closing it ends the session. A profile of
+  our own also means saved journeys survive between runs. If the browser dies within six seconds it
+  clearly never opened, so the launcher falls back to the default browser and keeps serving.
+- `/music/manifest.json` is generated live by the launcher from the contents of the `music` folder,
+  which is the same trick the Vite dev plugin does, so a friend can drop a `.mid` in without a rebuild.
+- The packaged `game/index.html` **inlines the script as a classic `<script>` at the end of the body**
+  rather than loading a module. Modules are blocked over `file://`, so inlining makes the single file
+  work by double-click as a fallback. It has to move to the end of the body because an inline classic
+  script runs before the canvas exists, which a deferred module does not.
+
+`npm run release-check` exercises all of that against the real script rather than trusting it.
+
 ## Known gaps and likely next steps
 
 - No swamp-specific crossing flavour beyond Froggy Bottom Bogg's reduced options.

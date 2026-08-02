@@ -12,7 +12,9 @@
     "smoke": "node tools/smoketest.mjs",
     "layout": "node tools/layout-audit.mjs",
     "audio": "node tools/audio-check.mjs",
-    "paths": "node tools/paths.mjs"
+    "paths": "node tools/paths.mjs",
+    "package": "node tools/package.mjs",
+    "release-check": "node tools/release-check.mjs"
   },
   "devDependencies": {
     "puppeteer-core": "^25.4.0",

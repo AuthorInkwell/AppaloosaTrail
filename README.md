@@ -21,6 +21,32 @@ npm run preview  # serve the production build
 
 There are no runtime dependencies. The whole game is a static page.
 
+## Sending it to somebody who does not code
+
+```bash
+npm run package
+```
+
+That produces `release/AppaloosaTrail.zip` (about 70 kB). The recipient unzips
+it and double-clicks **Play The Appaloosa Trail.bat**; the game opens in its own
+window and closing that window shuts everything down. Nothing is installed and
+nothing is downloaded — the launcher is a small PowerShell script that serves the
+folder on `127.0.0.1` using only what already ships with Windows, so there is no
+Node, no Python and no firewall prompt.
+
+The packaged `game/index.html` is one self-contained file with the script inlined,
+so if the launcher is ever blocked it can simply be opened in a browser instead;
+saved journeys still work that way, and only drop-in music is lost.
+
+`play.command` does the same job on macOS and Linux.
+
+`npm run release-check` builds the package and then verifies it the way the
+recipient will use it: it starts the real launcher script under PowerShell,
+checks that it serves the game, refuses directory traversal, notices music
+dropped into the folder without a rebuild, keeps running while the game window
+is open, shuts down when that window closes, survives a browser that fails to
+start, and then plays a session both through the launcher and straight off disk.
+
 ## Controls
 
 | Key | Does |
@@ -119,7 +145,14 @@ src/
     systems/  travel simulation, effects, scoring, saves, trail markers
     scenes/   title/setup, store, travel, menus, landmarks, rivers,
               foraging, the finale, shared modal furniture
+launcher/
+  Play The Appaloosa Trail.bat   what the recipient double-clicks
+  serve.ps1                      dependency-free local server for Windows
+  play.command                   the same for macOS and Linux
+  README.txt                     plain-English instructions, shipped in the zip
 tools/
+  package.mjs       assembles the shareable release folder and zip
+  release-check.mjs runs the packaged launcher and plays through it
   smoketest.mjs     scripted playthrough that drives the real game in Chrome
   layout-audit.mjs  walks every screen and reports text that escapes its box
   audio-check.mjs   confirms every music slot actually reaches the output
