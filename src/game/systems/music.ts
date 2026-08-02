@@ -75,6 +75,9 @@ function musicUrl(file: string): string {
 export async function loadImportedMusic(): Promise<string[]> {
   const loaded: string[] = [];
   let files: string[] = [];
+  // Opened straight off disk there is no server to ask, and the request would
+  // only fail on CORS, so do not make it.
+  if (location.protocol === "file:") return loaded;
   try {
     const res = await fetch(new URL("music/manifest.json", document.baseURI).toString(), { cache: "no-cache" });
     if (!res.ok) return loaded;
