@@ -588,10 +588,12 @@ interface MonthOption {
   detail: string;
 }
 
+// Hints sit in the menu's right-hand column, so they have to stay short; the
+// full description goes in the panel underneath.
 const MONTH_OPTIONS: MonthOption[] = [
   {
     month: 3,
-    hint: "cold and muddy, but a long season ahead",
+    hint: "cold, muddy, long season",
     detail: "Rivers run high with snowmelt and the grass is thin, but you will be well clear of winter at the far end.",
   },
   {
@@ -601,17 +603,17 @@ const MONTH_OPTIONS: MonthOption[] = [
   },
   {
     month: 5,
-    hint: "good grass, gentle weather",
+    hint: "good grass, kind weather",
     detail: "The best travelling weather of the year, and plenty of grazing for the team.",
   },
   {
     month: 6,
-    hint: "hot going, less time in hand",
+    hint: "hot going, less time",
     detail: "You will cross the desert stretch at its worst, and any delay pushes your arrival toward winter.",
   },
   {
     month: 7,
-    hint: "late, hot, and risky",
+    hint: "late, hot, risky",
     detail: "A late start means desert heat now and a real chance of snow in the mountains before you arrive.",
   },
 ];

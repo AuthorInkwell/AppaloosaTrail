@@ -45,6 +45,22 @@ export function wrapText(str: string, cols: number): string[] {
   return out;
 }
 
+/**
+ * Cuts a string to fit, and tells the layout checker about it. Truncated text
+ * is a layout bug, not a solution, so the audit reports every one of these.
+ */
+export function truncate(str: string, maxChars: number, where = "text"): string {
+  if (str.length <= maxChars) return str;
+  const shown = maxChars > 1 ? `${str.slice(0, maxChars - 1)}.` : str.slice(0, maxChars);
+  screen.reportTruncation(str, shown, where);
+  return shown;
+}
+
+/** Characters that fit in a pixel width. */
+export function charsInWidth(px: number): number {
+  return Math.max(0, Math.floor(px / CELL_W));
+}
+
 export function blink(periodMs = 900, dutyFraction = 0.6): boolean {
   return (performance.now() % periodMs) / periodMs < dutyFraction;
 }
@@ -183,7 +199,7 @@ export class Menu {
     this.items.forEach((item, i) => {
       const y = o.y + i * lh;
       const selected = i === this.index;
-      const trimmed = o.maxLabel && item.label.length > o.maxLabel ? `${item.label.slice(0, o.maxLabel - 1)}.` : item.label;
+      const trimmed = o.maxLabel ? truncate(item.label, o.maxLabel, "menu label") : item.label;
       const label = `${numbered ? `${i + 1}. ` : ""}${trimmed}`;
       let ink = o.color ?? C.GREY;
       if (item.disabled) ink = o.disabledColor ?? C.DARKGREY;
@@ -196,8 +212,13 @@ export class Menu {
       if (selected && !o.bar) screen.text(o.x - 8, y, blink(560, 0.65) ? ">" : " ", C.YELLOW);
       screen.text(o.x, y, label, ink);
       if (item.detail) {
-        const dx = o.x + (o.width ?? 0) - textWidth(item.detail);
-        screen.text(o.width ? dx : o.x + textWidth(label) + CELL_W, y, item.detail, o.detailColor ?? C.CYAN);
+        // Right-aligned, but never allowed to back into the label.
+        const labelEnd = o.x + textWidth(label);
+        const rightEdge = o.x + (o.width ?? textWidth(label) + CELL_W + textWidth(item.detail));
+        const detail = truncate(item.detail, charsInWidth(rightEdge - labelEnd - CELL_W), "menu detail");
+        if (detail) {
+          screen.text(Math.max(labelEnd + CELL_W, rightEdge - textWidth(detail)), y, detail, o.detailColor ?? C.CYAN);
+        }
       }
     });
     const note = this.items[this.index]?.note;
@@ -246,8 +267,10 @@ export class TextField {
   }
 
   draw(x: number, y: number, width = this.maxLen, color: Color = C.WHITE, active = true): void {
-    for (let i = 0; i < width; i++) screen.text(x + i * CELL_W, y + 1, "_", C.DARKGREY);
-    screen.text(x, y, this.value, color);
+    screen.withOverlap(() => {
+      for (let i = 0; i < width; i++) screen.text(x + i * CELL_W, y + 1, "_", C.DARKGREY);
+      screen.text(x, y, this.value, color);
+    });
     if (active && blink(620, 0.55)) {
       screen.rect(x + this.value.length * CELL_W, y, CELL_W - 1, CELL_H - 1, color);
     }

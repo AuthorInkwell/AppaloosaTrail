@@ -29,6 +29,8 @@ export interface Page {
 }
 
 const PANEL_W = 268;
+/** Choice dialogs run wider, because option labels need the room. */
+const CHOICE_W = 292;
 
 /**
  * A stack of modal panels shown one at a time. Used for event results, daily
@@ -140,7 +142,7 @@ export class ChoiceScene implements Scene {
     private opts: { art?: Painter; artHeight?: number; width?: number } = {},
   ) {
     this.menu = new Menu(labels.map((label) => ({ label })));
-    this.lines = wrapText(prompt, Math.floor(((opts.width ?? PANEL_W) - 16) / CELL_W));
+    this.lines = wrapText(prompt, Math.floor(((opts.width ?? CHOICE_W) - 16) / CELL_W));
   }
 
   update(): void {
@@ -152,7 +154,7 @@ export class ChoiceScene implements Scene {
   }
 
   draw(): void {
-    const w = this.opts.width ?? PANEL_W;
+    const w = this.opts.width ?? CHOICE_W;
     const artH = this.opts.art ? (this.opts.artHeight ?? 40) : 0;
     const h = 32 + artH + this.lines.length * CELL_H + this.menu.items.length * (CELL_H + 2);
     const x = (SCREEN_W - w) / 2;

@@ -368,7 +368,6 @@ export class RiverScene implements Scene {
     screen.text(9, VISTA_BOTTOM + 18, `${this.river.width} ft across`, C.WHITE);
     screen.text(9, VISTA_BOTTOM + 26, `${this.depth.toFixed(1)} ft deep`, this.depth > 3 ? C.BRIGHTRED : C.WHITE);
     screen.text(9, VISTA_BOTTOM + 34, `${this.currentLabel()}`, C.BRIGHTCYAN);
-    screen.textRight(114, VISTA_BOTTOM + 34, `team ${g.team}`, C.WHITE);
     screen.text(9, VISTA_BOTTOM + 44, `${Math.round(g.bits)} bits`, C.WHITE);
     screen.text(9, VISTA_BOTTOM + 52, `${Math.round(g.food)} baskets`, C.WHITE);
     void livingPonies;

@@ -6,7 +6,7 @@
 import { audio } from "../../engine/audio";
 import { input } from "../../engine/input";
 import { Scene, scenes } from "../../engine/scene";
-import { C, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
+import { C, CELL_W, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
 import { blink } from "../../engine/ui";
 import {
   Terrain,
@@ -34,9 +34,9 @@ import { currentMusicSlot, setMusic } from "../systems/music";
 import { runDayResult } from "./eventrunner";
 import { SizeUpScene } from "./menus";
 
-const HORIZON = 92;
-const GROUND_Y = 136;
-const PANEL_Y = 144;
+const HORIZON = 86;
+const GROUND_Y = 128;
+const PANEL_Y = 136;
 const DAY_SECONDS = 1.15;
 
 export function drawWeatherOverlay(weather: Weather, frame: number, top = 0, bottom = PANEL_Y): void {
@@ -249,14 +249,17 @@ export class TravelScene implements Scene {
       const away = next.mile - g.miles;
       if (away < 30) {
         const x = 300 - Math.round((30 - away) * 6);
-        screen.text(Math.max(6, x - next.name.length * 3), HORIZON - 12, next.name, C.WHITE);
-        screen.text(Math.max(6, x), HORIZON - 4, "\u0004", C.YELLOW);
+        const labelW = next.name.length * CELL_W;
+        const labelX = Math.max(4, Math.min(SCREEN_W - 4 - labelW, x - labelW / 2));
+        screen.text(labelX, HORIZON - 14, next.name, C.WHITE);
+        screen.text(Math.max(4, Math.min(SCREEN_W - 10, x)), HORIZON - 5, "\u0004", C.YELLOW);
       }
     }
 
     drawStatusPanel(g, PANEL_Y);
-    if (blink(1000, 0.55)) {
-      screen.textRight(SCREEN_W - 5, SCREEN_H - 9, "SPACE BAR to size up the situation", C.BRIGHTGREEN);
+    // Only prompt when nothing is layered on top asking for the same key.
+    if (scenes.top === this && blink(1000, 0.55)) {
+      screen.textRight(SCREEN_W - 5, SCREEN_H - 11, "SPACE BAR to size up the situation", C.BRIGHTGREEN);
     }
   }
 }
