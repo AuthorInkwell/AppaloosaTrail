@@ -134,8 +134,8 @@ any console error.
 - `npm run smoke` plays a whole journey, screenshotting every stage. `--skip-ahead 1540` jumps to
   the late trail to exercise the endgame.
 - `npm run layout` opens the game with `?layout=1`, which turns on a checker that reports any text
-  drawn outside its panel or off the screen, then walks every screen, every random event and every
-  landmark. It should always report nothing.
+  drawn outside its panel, off the screen, on top of other text, or silently truncated, then walks
+  every screen, every random event and every landmark. It should always report nothing.
 - `npm run audio` samples the master output while each music slot plays, so a silent or broken track
   fails the run rather than going unnoticed.
 

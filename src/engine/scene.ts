@@ -68,8 +68,9 @@ class SceneStack {
     let start = this.stack.length - 1;
     while (start > 0 && this.stack[start]?.transparent) start--;
     for (let i = start; i < this.stack.length; i++) {
-      screen.resetRegions();
-      this.stack[i]!.draw();
+      const scene = this.stack[i]!;
+      screen.resetRegions(scene.name);
+      scene.draw();
     }
   }
 }

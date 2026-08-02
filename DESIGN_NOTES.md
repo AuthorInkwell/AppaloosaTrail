@@ -103,9 +103,17 @@ seven, but they are still placeholder-grade compared to anything written by a pe
 
 ## Keeping the text inside its boxes
 
-Text overflow is easy to introduce and hard to spot, so it is checked automatically rather than by
-eye. Open the game with `?layout=1` and every string drawn is compared against the screen edges and
-against whatever panel it sits inside; anything that escapes is reported to the console once.
+Text problems are easy to introduce and hard to spot, so they are checked automatically rather than
+by eye. Open the game with `?layout=1` and every string drawn is checked three ways:
+
+1. **Escaping its box** — text that crosses the screen edge or the inside of a panel it sits in.
+2. **Colliding with other text** — two strings drawn over one another in the same frame. Drop
+   shadows and the placeholder underscores behind a text field opt out via `screen.withOverlap`.
+3. **Being truncated** — anything cut down by the `truncate()` helper is reported, because a
+   half-printed landmark name is a layout bug rather than a fix. Use `truncate()` rather than
+   `slice()` for anything that reaches the screen.
+
+Every report names the scene it came from.
 `npm run layout` turns that on and then walks every screen, every one of the forty-one random events
 including each of their choices, every landmark, river and the fork, the minigames, the memorial and
 both endings, entering maximum-length pony names along the way. It should always report nothing.

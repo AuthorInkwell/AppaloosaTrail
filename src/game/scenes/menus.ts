@@ -110,19 +110,16 @@ export class SizeUpScene implements Scene {
     screen.textCentered(SCREEN_W / 2, 22, "SIZING UP THE SITUATION", C.YELLOW);
     screen.hline(30, 31, SCREEN_W - 60, C.DARKGREY);
     const next = nextLandmarkInfo(g);
-    screen.textCentered(
-      SCREEN_W / 2,
-      35,
-      `${formatDate(g.date)}  \u0006  ${next.milesAway} mi to ${next.name}`.slice(0, 44),
-      C.BRIGHTCYAN,
-    );
-    screen.textCentered(SCREEN_W / 2, 44, "You may:", C.CYAN);
+    // Two lines: the longest date and the longest landmark name will not share one.
+    screen.textCentered(SCREEN_W / 2, 35, formatDate(g.date), C.BRIGHTCYAN);
+    screen.textCentered(SCREEN_W / 2, 44, `${next.milesAway} miles to ${next.name}`, C.YELLOW);
+    screen.textCentered(SCREEN_W / 2, 55, "You may:", C.CYAN);
     this.menu.draw({
       x: 46,
-      y: 54,
+      y: 67,
       color: C.GREY,
       cursorColor: C.WHITE,
-      lineHeight: 10,
+      lineHeight: 9,
       width: SCREEN_W - 96,
       detailColor: C.BROWN,
     });
@@ -237,13 +234,15 @@ export class MapScene implements Scene {
       const color =
         l.kind === "river" ? C.BRIGHTCYAN : l.kind === "town" ? C.YELLOW : l.kind === "end" ? C.BRIGHTGREEN : C.WHITE;
       const ink = passed ? color : isNext ? C.WHITE : C.DARKGREY;
-      screen.textRight(railX - 6, y, l.name.slice(0, 22), ink);
+      const name = l.name.slice(0, 22);
+      screen.textRight(railX - 6, y, name, ink);
       screen.rect(railX - 2, y + 2, 6, 3, passed ? color : C.DARKGREY);
       screen.text(railX + 10, y, `${l.mile} mi`, passed ? C.GREY : C.DARKGREY);
       const tag =
         l.kind === "river" ? "crossing" : l.kind === "town" ? "supplies" : l.kind === "fork" ? "a choice" : "";
       if (tag) screen.text(railX + 56, y, tag, passed ? C.DARKGREY : C.BROWN);
-      if (isNext && blink(600, 0.6)) screen.text(railX - 2 - 14, y, "\u0004", C.BRIGHTRED);
+      // The marker sits clear of the name rather than on top of it.
+      if (isNext && blink(600, 0.6)) screen.text(railX - 12 - name.length * 6, y, "\u0004", C.BRIGHTRED);
     });
 
     // The wagon sits between the ticks according to how far along it is.

@@ -447,7 +447,7 @@ export const EVENTS: TrailEvent[] = [
     text: "A shimmering cloud of parasprites settles over the wagon, and they have found the food stores.",
     choices: [
       {
-        label: "Drive them off with everypony you have",
+        label: "Drive them off with everypony",
         resolve: ({ g, r }) => {
           const lost = takeFood(g, r.int(6, 16));
           damageParty(g, 4);
@@ -988,7 +988,7 @@ export const EVENTS: TrailEvent[] = [
         },
       },
       {
-        label: "Promise them a bonus at the next town",
+        label: "Promise a bonus at the next town",
         resolve: ({ g, r }) => {
           if (r.chance(0.6)) {
             changeMood(g, 12);
