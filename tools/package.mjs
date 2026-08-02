@@ -18,7 +18,17 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -74,6 +84,7 @@ cpSync(join(repo, "launcher", "serve.ps1"), join(appDir, "launcher", "serve.ps1"
 cpSync(join(repo, "launcher", "Play The Appaloosa Trail.bat"), join(appDir, "Play The Appaloosa Trail.bat"));
 cpSync(join(repo, "launcher", "README.txt"), join(appDir, "README.txt"));
 cpSync(join(repo, "launcher", "play.command"), join(appDir, "play.command"));
+chmodSync(join(appDir, "play.command"), 0o755);
 cpSync(join(repo, "public", "music", "README.md"), join(appDir, "music", "How to add music.txt"));
 
 // Any music already sitting in public/music travels with the build.
