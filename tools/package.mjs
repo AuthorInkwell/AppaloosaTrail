@@ -44,6 +44,23 @@ const makeZip = !args.includes("--no-zip");
 
 const log = (msg) => console.log(`  ${msg}`);
 
+const runNodeScript = (scriptPath, args, stdio = "inherit", opts = {}) => {
+  if (!existsSync(scriptPath)) {
+    throw new Error(`missing ${scriptPath} — run npm install first`);
+  }
+  const result = spawnSync(process.execPath, [scriptPath, ...args], {
+    cwd: repo,
+    stdio,
+    encoding: "utf8",
+    ...opts,
+  });
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || "").trim();
+    throw new Error(detail || `node ${scriptPath} ${args.join(" ")} failed`);
+  }
+  return result;
+};
+
 const run = (command, args, stdio = "inherit", opts = {}) => {
   const result = spawnSync(command, args, {
     cwd: repo,
@@ -62,8 +79,11 @@ const run = (command, args, stdio = "inherit", opts = {}) => {
 // --------------------------------------------------------------- build
 console.log("\nPackaging The Appaloosa Trail\n");
 log("building");
-// npm/npx are .cmd shims on Windows; spawn without shell cannot find them (ENOENT).
-run("npm", ["run", "build"], "pipe");
+// Call local bin scripts through node so we never depend on PATH, npx.cmd, or tsc.cmd.
+const tsc = join(repo, "node_modules", "typescript", "bin", "tsc");
+const vite = join(repo, "node_modules", "vite", "bin", "vite.js");
+if (existsSync(tsc)) runNodeScript(tsc, ["--noEmit"], "pipe");
+runNodeScript(vite, ["build"], "pipe");
 
 const dist = join(repo, "dist");
 const html = readFileSync(join(dist, "index.html"), "utf8");
