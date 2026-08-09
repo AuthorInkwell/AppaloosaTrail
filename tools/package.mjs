@@ -17,7 +17,7 @@
  * also works if opened straight off disk, without any server at all.
  */
 
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import {
   chmodSync,
   cpSync,
@@ -44,10 +44,26 @@ const makeZip = !args.includes("--no-zip");
 
 const log = (msg) => console.log(`  ${msg}`);
 
+const run = (command, args, stdio = "inherit", opts = {}) => {
+  const result = spawnSync(command, args, {
+    cwd: repo,
+    stdio,
+    shell: process.platform === "win32",
+    encoding: "utf8",
+    ...opts,
+  });
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || "").trim();
+    throw new Error(detail || `${command} ${args.join(" ")} failed`);
+  }
+  return result;
+};
+
 // --------------------------------------------------------------- build
 console.log("\nPackaging The Appaloosa Trail\n");
 log("building");
-execFileSync("npx", ["vite", "build"], { cwd: repo, stdio: "pipe" });
+// npm/npx are .cmd shims on Windows; spawn without shell cannot find them (ENOENT).
+run("npm", ["run", "build"], "pipe");
 
 const dist = join(repo, "dist");
 const html = readFileSync(join(dist, "index.html"), "utf8");
@@ -108,7 +124,7 @@ if (makeZip) {
   const zipPath = join(outRoot, "AppaloosaTrail.zip");
   rmSync(zipPath, { force: true });
   try {
-    execFileSync("zip", ["-r", "-q", zipPath, "AppaloosaTrail"], { cwd: outRoot });
+    run("zip", ["-r", "-q", zipPath, "AppaloosaTrail"], "pipe", { cwd: outRoot });
     log(`zipped ${zipPath} (${(statSync(zipPath).size / 1024).toFixed(0)} kB)`);
   } catch {
     log("zip not available; the folder is ready to compress by hand");
