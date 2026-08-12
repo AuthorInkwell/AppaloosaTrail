@@ -12,9 +12,9 @@ import { C, SCREEN_H, SCREEN_W, Sprite, screen, spriteSize } from "../../engine/
 import { Menu, blink, footer, gauge, panel, screenFrame, wrapText } from "../../engine/ui";
 import { APPLE, BERRIES, BIRD_A, BIRD_B, DEER, GRASSES, NUTS } from "../../art/sprites";
 import { drawBush, drawGroundDetail, drawPine, drawTree, hash01, skyPalette } from "../../art/scenery";
-import { drawPony, drawWagon } from "../../art/wagon";
+import { drawPartyPony, drawWagon } from "../../art/wagon";
 import { terrainAt } from "../data/trail";
-import { GameState, log } from "../state";
+import { GameState, log, master } from "../state";
 import { passDays } from "../systems/travel";
 import { Page, showPages } from "./common";
 import { setMusic } from "../systems/music";
@@ -433,7 +433,12 @@ export class ForageScene implements Scene {
     }
 
     // Player
-    drawPony(this.px, this.py + 6, 0, "pack", { flipX: this.facing < 0, bob: Math.floor(Math.sin(this.frame * 0.4) * 1.2) });
+    const forager = master(this.g) ?? this.g.ponies[0]!;
+    drawPartyPony(this.px, this.py + 6, forager, {
+      kind: "pack",
+      flipX: this.facing < 0,
+      bob: Math.floor(Math.sin(this.frame * 0.4) * 1.2),
+    });
 
     // HUD
     screen.rect(0, 0, SCREEN_W, FIELD_TOP - 8, C.BLACK);

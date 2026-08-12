@@ -1,5 +1,6 @@
 /** Composite drawing for the wagon and its team, including rolling wheels. */
 
+import { PonyAppearance, PonyState } from "../game/state";
 import { C, Color, screen, spriteSize } from "../engine/screen";
 import {
   PONY,
@@ -19,6 +20,11 @@ export interface CoatColors {
   mane: Color;
 }
 
+export interface PonyLook {
+  coatIndex: number;
+  maneIndex: number;
+}
+
 /** A small spread of pastel-ish coats within the EGA palette. */
 export const COATS: CoatColors[] = [
   { coat: C.PINK, mane: C.MAGENTA },
@@ -31,6 +37,11 @@ export const COATS: CoatColors[] = [
   { coat: C.BRIGHTRED, mane: C.YELLOW },
 ];
 
+export const COAT_NAMES = ["pink", "cyan", "yellow", "white", "green", "brown", "grey", "red"];
+export const MANE_NAMES = ["magenta", "blue", "brown", "pink", "green", "yellow", "blue", "yellow"];
+export const APPEARANCE_NAMES = ["earth pony", "unicorn", "pegasus"] as const;
+export const APPEARANCE_ORDER = ["earth", "unicorn", "pegasus"] as const;
+
 export function coatFor(index: number): CoatColors {
   return COATS[index % COATS.length]!;
 }
@@ -40,7 +51,34 @@ export function ponyRemap(index: number): Record<string, Color> {
   return { C: c.coat, M: c.mane, H: C.DARKGREY, E: C.BLACK };
 }
 
+export function ponyRemapFor(look: PonyLook): Record<string, Color> {
+  const coat = COATS[look.coatIndex % COATS.length]!.coat;
+  const mane = COATS[look.maneIndex % COATS.length]!.mane;
+  return { C: coat, M: mane, H: C.DARKGREY, E: C.BLACK };
+}
+
 export type PonyKind = "plain" | "winged" | "horned" | "pack";
+
+export function appearanceKind(appearance: PonyAppearance): PonyKind {
+  switch (appearance) {
+    case "unicorn":
+      return "horned";
+    case "pegasus":
+      return "winged";
+    default:
+      return "plain";
+  }
+}
+
+export function drawPartyPony(
+  x: number,
+  baseY: number,
+  pony: PonyState,
+  opts: { flipX?: boolean; bob?: number; scale?: number; kind?: PonyKind } = {},
+): void {
+  const kind = opts.kind ?? appearanceKind(pony.appearance);
+  drawPonyLook(x, baseY, pony, kind, opts);
+}
 
 export function ponySprite(kind: PonyKind) {
   switch (kind) {
@@ -67,6 +105,23 @@ export function drawPony(
   const { h } = spriteSize(sprite);
   screen.sprite(sprite, x, baseY - h * scale + (opts.bob ?? 0), {
     remap: ponyRemap(index),
+    flipX: opts.flipX,
+    scale,
+  });
+}
+
+export function drawPonyLook(
+  x: number,
+  baseY: number,
+  look: PonyLook,
+  kind: PonyKind = "plain",
+  opts: { flipX?: boolean; bob?: number; scale?: number } = {},
+): void {
+  const sprite = ponySprite(kind);
+  const scale = opts.scale ?? 1;
+  const { h } = spriteSize(sprite);
+  screen.sprite(sprite, x, baseY - h * scale + (opts.bob ?? 0), {
+    remap: ponyRemapFor(look),
     flipX: opts.flipX,
     scale,
   });

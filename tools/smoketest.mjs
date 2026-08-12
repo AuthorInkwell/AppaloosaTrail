@@ -104,6 +104,9 @@ async function main() {
   await press("F2");
   await shot("naming-random");
   for (let i = 0; i < 5; i++) await press("Enter", 140);
+  await expect("customize");
+  await shot("customize");
+  await press("Enter");
   await expect("departure");
   await shot("departure");
 

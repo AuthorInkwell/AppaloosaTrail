@@ -5,9 +5,11 @@
 
 import { Rng } from "../engine/rng";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type Origin = "unicorn" | "pegasus" | "earth";
+/** Cosmetic pony type stored per party member; does not change gameplay. */
+export type PonyAppearance = "earth" | "unicorn" | "pegasus";
 export type Pace = "steady" | "strenuous" | "grueling";
 export type Rations = "filling" | "meager" | "bare";
 export type Weather = "fair" | "warm" | "hot" | "cool" | "cold" | "rain" | "storm" | "snow" | "fog";
@@ -22,6 +24,12 @@ export interface PonyState {
   /** Consecutive days spent at zero health, i.e. at death's door. */
   criticalDays: number;
   isMaster: boolean;
+  /** Index into the coat palette in `art/wagon.ts`. */
+  coatIndex: number;
+  /** Index into the mane palette in `art/wagon.ts`. */
+  maneIndex: number;
+  /** Cosmetic sprite type; origin still governs wagon-master perks. */
+  appearance: PonyAppearance;
   causeOfDeath?: string;
   dayOfDeath?: number;
   dateOfDeath?: string;
@@ -237,6 +245,11 @@ export const FOOD_PER_TEAM_MEMBER = 0.5;
 export const MAX_TEAM = 8;
 export const MIN_TEAM_TO_START = 2;
 
+export function defaultPonyAppearance(_index: number, origin: Origin, isMaster: boolean): PonyAppearance {
+  if (isMaster) return origin;
+  return "earth";
+}
+
 export function createGame(origin: Origin, names: string[], seed = Date.now() >>> 0): GameState {
   return {
     version: SAVE_VERSION,
@@ -250,6 +263,9 @@ export function createGame(origin: Origin, names: string[], seed = Date.now() >>
       ailmentDays: 0,
       criticalDays: 0,
       isMaster: i === 0,
+      coatIndex: i % 8,
+      maneIndex: i % 8,
+      appearance: defaultPonyAppearance(i, origin, i === 0),
     })),
     bits: ORIGINS[origin].bits,
     food: 0,

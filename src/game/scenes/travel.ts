@@ -24,7 +24,7 @@ import {
   hash01,
   skyPalette,
 } from "../../art/scenery";
-import { PonyKind, drawPony, drawRig } from "../../art/wagon";
+import { drawPartyPony, drawRig } from "../../art/wagon";
 import { TRAIL, terrainAt } from "../data/trail";
 import { session } from "../session";
 import { PACE_INFO, Weather, livingPonies } from "../state";
@@ -233,12 +233,13 @@ export class TravelScene implements Scene {
     drawRig(184, GROUND_Y, g.team, this.frame, jolt);
 
     // Walking party trailing the wagon.
-    const walkers = Math.max(0, livingPonies(g).length - (g.team === 0 ? 2 : 0));
-    for (let i = 0; i < Math.min(3, walkers); i++) {
+    const alive = livingPonies(g);
+    const offset = g.team === 0 ? 2 : 0;
+    for (let i = 0; i < Math.min(3, alive.length - offset); i++) {
+      const p = alive[offset + i];
+      if (!p) continue;
       const bob = Math.floor(Math.sin(this.frame * 0.28 + i * 1.3) * 1.3);
-      const kind: PonyKind =
-        i === 0 && g.origin === "pegasus" ? "winged" : i === 0 && g.origin === "unicorn" ? "horned" : "plain";
-      drawPony(232 + i * 18, GROUND_Y, i + 2, kind, { bob });
+      drawPartyPony(232 + i * 18, GROUND_Y, p, { bob });
     }
 
     drawWeatherOverlay(g.weather, this.frame);
