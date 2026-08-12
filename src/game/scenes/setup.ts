@@ -684,6 +684,11 @@ export class CustomizeScene implements Scene {
       screen.text(14, y, label, active ? C.YELLOW : C.CYAN);
       screen.text(100, y, p.name, active ? C.WHITE : C.GREY);
       drawPartyPony(SCREEN_W - 40, y + 14, p, {
+      const label = i === 0 ? "Wagon Master" : `Party member ${i}`;
+      if (active) screen.rect(12, y - 2, SCREEN_W - 24, 18, C.BLUE);
+      screen.text(18, y, label, active ? C.YELLOW : C.CYAN);
+      screen.text(108, y, p.name.slice(0, 12), active ? C.WHITE : C.GREY);
+      drawPartyPony(SCREEN_W - 44, y + 14, p, {
         bob: active ? Math.floor(Math.sin(this.frame * 0.16) * 1.5) : 0,
         scale: active ? 1 : 0.85,
       });
@@ -707,6 +712,7 @@ export class CustomizeScene implements Scene {
 
     const hint = `${GLYPH.up}${GLYPH.down} pony  ${GLYPH.left}${GLYPH.right} coat  , . mane  T type  F2 random  ENTER`;
     screen.textCentered(SCREEN_W / 2, SCREEN_H - 11, hint, C.YELLOW);
+    footer("↑↓ pony  ←→ coat  , . mane  T type  F2 random  RETURN continue");
   }
 }
 
