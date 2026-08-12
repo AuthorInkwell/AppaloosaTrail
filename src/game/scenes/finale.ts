@@ -11,7 +11,7 @@ import { Menu, blink, footer, gauge, panel, screenFrame, wrapText } from "../../
 import { TIMBERWOLF } from "../../art/sprites";
 import { drawBush, drawPine, drawRock, hash01 } from "../../art/scenery";
 import { drawVista } from "../../art/vistas";
-import { drawPony, drawRig } from "../../art/wagon";
+import { drawPartyPony, drawRig } from "../../art/wagon";
 import { EVERFREE_SHORTCUT_MILES, Landmark, TOLL_ROAD_COST, TOTAL_MILES } from "../data/trail";
 import { session } from "../session";
 import { GameState, ORIGINS, formatDate, healthLabel, livingPonies, log, partyHealth, spend } from "../state";
@@ -551,7 +551,9 @@ export class ArrivalScene implements Scene {
     screenFrame("APPALOOSA");
     drawVista("appaloosa", "desert", { top: 12, bottom: 120, frame: this.frame, rig: g.team });
     for (let i = 0; i < Math.min(4, livingPonies(g).length); i++) {
-      drawPony(40 + i * 26, 124, i, i === 0 ? (g.origin === "unicorn" ? "horned" : g.origin === "pegasus" ? "winged" : "plain") : "plain", {
+      const p = livingPonies(g)[i];
+      if (!p) continue;
+      drawPartyPony(40 + i * 26, 124, p, {
         bob: Math.floor(Math.sin(this.frame * 0.14 + i) * 1.6),
       });
     }

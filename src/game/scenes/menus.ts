@@ -6,7 +6,7 @@ import { Scene, scenes } from "../../engine/scene";
 import { C, CELL_H, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
 import { Menu, blink, footer, gauge, panel, screenFrame, wrapText } from "../../engine/ui";
 import { BASKET, CLOAK, COIN, POTION, WHEEL_ICON } from "../../art/sprites";
-import { drawPony } from "../../art/wagon";
+import { drawPartyPony } from "../../art/wagon";
 import { TOTAL_MILES, TRAIL } from "../data/trail";
 import { ailmentById } from "../data/ailments";
 import { session } from "../session";
@@ -402,14 +402,7 @@ export class PartyScene implements Scene {
       const y = 30 + i * 30;
       const selected = i === this.index;
       panel(14, y, SCREEN_W - 28, 27, { fill: selected ? C.BLUE : C.BLACK, border: selected ? C.WHITE : C.DARKGREY });
-      const kind = p.isMaster
-        ? g.origin === "unicorn"
-          ? "horned"
-          : g.origin === "pegasus"
-            ? "winged"
-            : "plain"
-        : "plain";
-      if (p.alive) drawPony(20, y + 24, i, kind, { bob: selected ? Math.floor(Math.sin(this.frame * 0.15) * 1.2) : 0 });
+      if (p.alive) drawPartyPony(20, y + 24, p, { bob: selected ? Math.floor(Math.sin(this.frame * 0.15) * 1.2) : 0 });
       else screen.text(24, y + 10, "\u0006", C.DARKGREY);
       screen.text(46, y + 4, p.name, p.alive ? C.WHITE : C.DARKGREY);
       if (p.isMaster) screen.text(46 + p.name.length * 6 + 6, y + 4, "(wagon master)", C.BROWN);

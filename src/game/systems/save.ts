@@ -4,6 +4,7 @@
  */
 
 import { GameState, SAVE_VERSION, formatDate, livingPonies, master } from "../state";
+import { COATS } from "../../art/wagon";
 import { TRAIL } from "../data/trail";
 
 const KEY = (slot: number) => `appaloosa.save.${slot}`;
@@ -45,13 +46,20 @@ export function loadGame(slot: number): GameState | null {
     const raw = localStorage.getItem(KEY(slot));
     if (!raw) return null;
     const record = JSON.parse(raw) as SaveRecord;
-    if (!record?.state || record.version !== SAVE_VERSION) return null;
+    if (!record?.state) return null;
+    if (record.version !== SAVE_VERSION && record.version !== 1) return null;
     const g = record.state;
     // Guard against saves written by an older build.
     g.flags ??= {};
     g.log ??= [];
     g.landmarkIndex = Math.min(Math.max(1, g.landmarkIndex), TRAIL.length - 1);
-    for (const p of g.ponies) p.criticalDays ??= 0;
+    for (const [i, p] of g.ponies.entries()) {
+      p.criticalDays ??= 0;
+      p.coatIndex ??= i % COATS.length;
+      p.maneIndex ??= i % COATS.length;
+      p.appearance ??= p.isMaster ? g.origin : "earth";
+    }
+    g.version = SAVE_VERSION;
     return g;
   } catch {
     return null;

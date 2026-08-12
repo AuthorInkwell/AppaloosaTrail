@@ -16,11 +16,11 @@ import {
   drawTree,
   skyPalette,
 } from "../../art/scenery";
-import { drawPony, drawRig } from "../../art/wagon";
+import { drawPony, drawPonyLook, drawRig, appearanceKind, APPEARANCE_NAMES, APPEARANCE_ORDER, COAT_NAMES, drawPartyPony, MANE_NAMES } from "../../art/wagon";
 import { randomPartyNames, randomPonyName } from "../data/names";
 import { TOTAL_MILES, TRAIL } from "../data/trail";
 import { session } from "../session";
-import { GameState, MONTH_NAMES, ORIGINS, Origin, createGame } from "../state";
+import { GameState, MONTH_NAMES, ORIGINS, Origin, PonyAppearance, createGame } from "../state";
 import { HofEntry, loadHallOfFame } from "../systems/score";
 import { SAVE_SLOTS, SaveSummary, loadGame, summarise } from "../systems/save";
 import { StoreScene } from "./store";
@@ -512,7 +512,7 @@ export class NamingScene implements Scene {
     while (names.length < PARTY_SIZE) names.push(randomPonyName(rng));
     const g = createGame(this.origin, names, rng.int(1, 0x7fffffff));
     session.start(g);
-    scenes.swap(new DepartureScene(g));
+    scenes.swap(new CustomizeScene(g));
   }
 
   update(dt: number): void {
@@ -563,18 +563,148 @@ export class NamingScene implements Scene {
       const label = i === 0 ? "Wagon Master" : `Party member ${i}`;
       screen.text(24, y, label, active ? C.YELLOW : C.CYAN);
       f.draw(118, y, 14, active ? C.WHITE : C.GREY, active);
-      const kind = i === 0 ? (this.origin === "unicorn" ? "horned" : this.origin === "pegasus" ? "winged" : "plain") : "plain";
-      drawPony(
+      const pony = { coatIndex: i, maneIndex: i };
+      const kind = i === 0 ? appearanceKind(this.origin) : "plain";
+      drawPonyLook(
         SCREEN_W - 46,
         y + 15,
-        i,
+        pony,
         kind,
         { bob: active ? Math.floor(Math.sin(this.frame * 0.16) * 1.5) : 0 },
       );
     });
 
     const ready = this.fields.every((f) => f.value.trim().length > 0);
-    footer(ready ? "F3 or RETURN on the last name to set out" : "every pony needs a name");
+    footer(ready ? "F3 or RETURN on the last name to customize" : "every pony needs a name");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Party customization
+// ---------------------------------------------------------------------------
+
+export class CustomizeScene implements Scene {
+  readonly name = "customize";
+  private index = 0;
+  private frame = 0;
+
+  constructor(private g: GameState) {}
+
+  private cycleCoat(delta: number): void {
+    const pony = this.g.ponies[this.index]!;
+    pony.coatIndex = (pony.coatIndex + delta + COAT_NAMES.length) % COAT_NAMES.length;
+    audio.sfx("move");
+  }
+
+  private cycleMane(delta: number): void {
+    const pony = this.g.ponies[this.index]!;
+    pony.maneIndex = (pony.maneIndex + delta + MANE_NAMES.length) % MANE_NAMES.length;
+    audio.sfx("move");
+  }
+
+  private cycleAppearance(delta: number): void {
+    const pony = this.g.ponies[this.index]!;
+    const order = APPEARANCE_ORDER as readonly PonyAppearance[];
+    const current = order.indexOf(pony.appearance);
+    pony.appearance = order[(current + delta + order.length) % order.length]!;
+    audio.sfx("move");
+  }
+
+  private randomise(): void {
+    for (let i = 0; i < this.g.ponies.length; i++) {
+      const pony = this.g.ponies[i]!;
+      pony.coatIndex = rng.int(0, COAT_NAMES.length - 1);
+      pony.maneIndex = rng.int(0, MANE_NAMES.length - 1);
+      pony.appearance = APPEARANCE_ORDER[rng.int(0, APPEARANCE_ORDER.length - 1)]!;
+    }
+    audio.sfx("pickup");
+  }
+
+  private done(): void {
+    scenes.swap(new DepartureScene(this.g));
+  }
+
+  update(dt: number): void {
+    this.frame += dt * 60;
+    if (input.pressed("ArrowUp")) {
+      this.index = Math.max(0, this.index - 1);
+      audio.sfx("move");
+      return;
+    }
+    if (input.pressed("ArrowDown")) {
+      this.index = Math.min(this.g.ponies.length - 1, this.index + 1);
+      audio.sfx("move");
+      return;
+    }
+    if (input.pressed("ArrowLeft")) {
+      this.cycleCoat(-1);
+      return;
+    }
+    if (input.pressed("ArrowRight")) {
+      this.cycleCoat(1);
+      return;
+    }
+    if (input.pressed("Comma", ",")) {
+      this.cycleMane(-1);
+      return;
+    }
+    if (input.pressed("Period", ".")) {
+      this.cycleMane(1);
+      return;
+    }
+    if (input.pressed("KeyT", "t")) {
+      this.cycleAppearance(1);
+      return;
+    }
+    if (input.pressed("F2")) {
+      this.randomise();
+      return;
+    }
+    if (input.cancel()) {
+      audio.sfx("back");
+      scenes.swap(new NamingScene(this.g.origin));
+      return;
+    }
+    if (input.confirm() || input.pressed("Enter")) {
+      audio.sfx("select");
+      this.done();
+    }
+  }
+
+  draw(): void {
+    screenFrame("CUSTOMIZE YOUR PARTY");
+    screen.textCentered(SCREEN_W / 2, 17, "Pick coat, mane, and type for each pony.", C.GREY);
+
+    this.g.ponies.forEach((p, i) => {
+      const y = 30 + i * 22;
+      const active = i === this.index;
+      const label = i === 0 ? "Wagon Master" : `Party member ${i}`;
+      if (active) screen.rect(12, y - 2, SCREEN_W - 24, 18, C.BLUE);
+      screen.text(18, y, label, active ? C.YELLOW : C.CYAN);
+      screen.text(108, y, p.name.slice(0, 12), active ? C.WHITE : C.GREY);
+      drawPartyPony(SCREEN_W - 44, y + 14, p, {
+        bob: active ? Math.floor(Math.sin(this.frame * 0.16) * 1.5) : 0,
+        scale: active ? 1 : 0.85,
+      });
+    });
+
+    const pony = this.g.ponies[this.index]!;
+    const detailY = 144;
+    panel(16, detailY, SCREEN_W - 32, 38, { fill: C.BLACK, border: C.GREY, label: "selected pony" });
+    screen.text(24, detailY + 12, `Coat: ${COAT_NAMES[pony.coatIndex % COAT_NAMES.length]}`, C.WHITE);
+    screen.text(24, detailY + 22, `Mane: ${MANE_NAMES[pony.maneIndex % MANE_NAMES.length]}`, C.WHITE);
+    const appIdx = APPEARANCE_ORDER.indexOf(pony.appearance);
+    screen.text(168, detailY + 12, `Type: ${APPEARANCE_NAMES[appIdx >= 0 ? appIdx : 0]}`, C.BRIGHTCYAN);
+    if (pony.isMaster) {
+      screen.text(168, detailY + 22, "(cosmetic only)", C.BROWN);
+    }
+
+    drawPartyPony(248, detailY + 34, pony, {
+      bob: Math.floor(Math.sin(this.frame * 0.14) * 1.5),
+      scale: 2,
+    });
+
+    footer("↑↓ pony  ←→ coat  , . mane  T type  F2 random  RETURN continue");
   }
 }
 
