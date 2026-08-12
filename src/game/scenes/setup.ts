@@ -5,6 +5,7 @@ import { input } from "../../engine/input";
 import { rng } from "../../engine/rng";
 import { Scene, scenes } from "../../engine/scene";
 import { C, CELL_H, SCREEN_H, SCREEN_W, screen } from "../../engine/screen";
+import { GLYPH } from "../../engine/font";
 import { COLS, Menu, TextField, blink, footer, gauge, panel, screenFrame, wrapText } from "../../engine/ui";
 import {
   drawCloud,
@@ -678,11 +679,11 @@ export class CustomizeScene implements Scene {
     this.g.ponies.forEach((p, i) => {
       const y = 30 + i * 22;
       const active = i === this.index;
-      const label = i === 0 ? "Wagon Master" : `Party member ${i}`;
+      const label = i === 0 ? "Wagon Master" : `Member ${i}`;
       if (active) screen.rect(12, y - 2, SCREEN_W - 24, 18, C.BLUE);
-      screen.text(18, y, label, active ? C.YELLOW : C.CYAN);
-      screen.text(108, y, p.name.slice(0, 12), active ? C.WHITE : C.GREY);
-      drawPartyPony(SCREEN_W - 44, y + 14, p, {
+      screen.text(14, y, label, active ? C.YELLOW : C.CYAN);
+      screen.text(100, y, p.name, active ? C.WHITE : C.GREY);
+      drawPartyPony(SCREEN_W - 40, y + 14, p, {
         bob: active ? Math.floor(Math.sin(this.frame * 0.16) * 1.5) : 0,
         scale: active ? 1 : 0.85,
       });
@@ -704,7 +705,8 @@ export class CustomizeScene implements Scene {
       scale: 2,
     });
 
-    footer("↑↓ pony  ←→ coat  , . mane  T type  F2 random  RETURN continue");
+    const hint = `${GLYPH.up}${GLYPH.down} pony  ${GLYPH.left}${GLYPH.right} coat  , . mane  T type  F2 random  ENTER`;
+    screen.textCentered(SCREEN_W / 2, SCREEN_H - 11, hint, C.YELLOW);
   }
 }
 
